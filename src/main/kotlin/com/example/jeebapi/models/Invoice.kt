@@ -9,37 +9,35 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import jakarta.persistence.Id
+import java.time.LocalDateTime
+import java.util.Date
 
 
 @Entity
-@Table (name = "invoice")
-data class Invoice(
+@Table(name = "invoice")
+ class Invoice(
 
-    @Id
+   @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
-
-    val buyer: String = "",
-    val status: String = "",
-   //  val date: Date = Date(),
-    val description: String = "",
-
-    @OneToMany(mappedBy = "invoice", cascade = [CascadeType.ALL])
-    val items: List<InvoProducts> = emptyList(),
-
-    @OneToMany(mappedBy = "invoice", cascade = [CascadeType.ALL])
-    val transaction: List<Transactions> = emptyList(),
+   var buyer: String ="",
+   var status: String ="",
+   var date: LocalDateTime =LocalDateTime.now(),
+   var description: String? ="",
 
 
+   @OneToMany(mappedBy = "invoice", cascade = [CascadeType.ALL], orphanRemoval = true)
+   var items: MutableList<InvoProducts> = mutableListOf(),
 
 
-    @ManyToOne
+   @OneToMany(mappedBy = "invoice", cascade = [CascadeType.ALL], orphanRemoval = true)
+    val transaction: MutableList<Transactions> =mutableListOf(),
+
+   @ManyToOne
     @JoinColumn(name = "user_id")
-    val user: User,
+   var user: User?= null,
 
-    @ManyToOne
+   @ManyToOne
     @JoinColumn(name = "customer_id")
-    val customer: Customer,
-
-
+   var customer: Customer?= null,
     )

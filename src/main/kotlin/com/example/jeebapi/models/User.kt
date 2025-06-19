@@ -20,6 +20,7 @@ data class User(
     val email: String = "",
 
     val password: String = "",
+    val accesslevel: Int = 0,
 
 
     @OneToMany(mappedBy = "user")

@@ -11,10 +11,10 @@ import jakarta.persistence.Table
 
 @Entity
 @Table(name = "Transactions")
-data class Transactions(
+ class Transactions(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long =0,
+    val id: Long? =0,
     val price: Double = 0.0,
     val amount: Int = 0,
     @ManyToOne
@@ -22,24 +22,12 @@ data class Transactions(
     val invoice: Invoice,
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
-    val product: Products,
+    val product: Products? = null,
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    val user: User,
+    val user: User? = null,
     @ManyToOne
     @JoinColumn(name = "provider_id")
-    val provider: Provider,
-
-
-
-
-
-
-
-
-
-
-
-
+    val provider: Provider? = null,
 
     )

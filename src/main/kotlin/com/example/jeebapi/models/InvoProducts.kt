@@ -1,6 +1,5 @@
 package com.example.jeebapi.models
 
-import jakarta.persistence.CascadeType
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -11,25 +10,25 @@ import jakarta.persistence.Table
 import jakarta.persistence.Id
 
 @Entity
-@Table(name="invo_products")
+@Table(name = "invo_products")
 data class InvoProducts(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
-    val invoid: Long = 0,
-    val name: String = "",
-    val quantity: Long = 0,
-    val price: Double,
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    var id: Long = 0,
+    var name: String = "",
+    var quantity: Long = 0L,
+    var price: Double = 0.0,
 
     @ManyToOne
-    @JoinColumn(name = "Invoice_id", nullable = false)
-    val invoice: Invoice,
+    @JoinColumn(name = "invoice_id")
+    var invoice: Invoice? = null,
+
 
     @ManyToOne
-    @JoinColumn(name = "product_id", nullable = false)
-    val product: Products,
+    @JoinColumn(name = "product_id")
+    val product: Products? = null,
+
     @ManyToOne
     @JoinColumn(name = "provider_id")
-    val provider: Provider,
+    var provider: Provider? = null,
 
-)
+    )
