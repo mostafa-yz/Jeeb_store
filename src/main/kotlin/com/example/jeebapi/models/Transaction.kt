@@ -9,25 +9,32 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 
 
+
 @Entity
 @Table(name = "Transactions")
- class Transactions(
+class Transactions(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? =0,
-    val price: Double = 0.0,
-    val amount: Int = 0,
+    val id: Long? = 0,
+
+    var price: Double = 0.0,
+    var quantity: Int?=0,
+
     @ManyToOne
     @JoinColumn(name = "Invoice_id", nullable = false)
-    val invoice: Invoice,
+    val invoice: Invoice? = null, // Corrected: Nullable with a default value
+
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
     val product: Products? = null,
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     val user: User? = null,
+
     @ManyToOne
     @JoinColumn(name = "provider_id")
-    val provider: Provider? = null,
+    val provider: Provider? = null
+)
 
-    )
+

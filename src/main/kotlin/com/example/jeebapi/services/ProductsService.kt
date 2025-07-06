@@ -12,6 +12,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
+import java.util.UUID
 
 
 @Service
@@ -152,9 +153,9 @@ class ProductsService(
             price = createRequest.price,
             quantity = createRequest.quantity,
             profit = createRequest.profit,
-            qrcode = createRequest.qrcode,
+            qrcode = UUID.randomUUID().toString().replace("-", "").substring(0, 10),
             position = createRequest.position,
-            provider = providerEntity // <-- Assign the FETCHED Provider ENTITY here!
+            provider = providerEntity
         )
         productsRepository.save(newProductEntity)
         return Productdto(

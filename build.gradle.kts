@@ -31,6 +31,7 @@ dependencies {
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 	implementation("org.xhtmlrenderer:flying-saucer-pdf:9.1.22")
 	implementation("io.jsonwebtoken:jjwt-api:0.11.5")
+	implementation("org.apache.poi:poi-ooxml:5.2.5")
 	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
 

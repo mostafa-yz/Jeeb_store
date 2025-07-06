@@ -7,6 +7,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import java.time.LocalDateTime
 
 @Entity
 @Table(name="storage_log")
@@ -17,9 +18,7 @@ data class storage_log(
     val quantity: Int,
     val action: ActionType,
     val reason: String? = null,
-    @ManyToOne
-    @JoinColumn(name = "Invoice_id", nullable = false)
-    val invoice: Invoice,
+    var date: LocalDateTime? =LocalDateTime.now(),
 
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
@@ -27,12 +26,12 @@ data class storage_log(
 
     @ManyToOne
     @JoinColumn(name = "provider_id")
-    val provider: Provider,
+    val provider: Provider?,
 
 
 
     )
 enum class ActionType {
-    RECHARGE, REMOVE
+    RECHARGE, REMOVE,add
 }
 

@@ -5,7 +5,6 @@ import com.example.jeebapi.DTO.ItemDto
 import com.example.jeebapi.models.InvoProducts
 import com.example.jeebapi.models.Invoice
 import org.springframework.stereotype.Component
-import kotlin.collections.flatten
 import kotlin.collections.map
 
 // InvoiceMapper (simplified for clarity, assuming ItemEntity has actual entity references)

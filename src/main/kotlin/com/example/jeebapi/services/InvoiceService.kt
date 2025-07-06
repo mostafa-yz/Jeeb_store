@@ -1,11 +1,9 @@
 package com.example.jeebapi.services
 
 import com.example.jeebapi.DTO.Invoicedto
-import com.example.jeebapi.DTO.ItemDto
 import com.example.jeebapi.mapper.InvoiceMapper
 import com.example.jeebapi.models.InvoProducts
 import com.example.jeebapi.models.Invoice
-import com.example.jeebapi.models.Products
 import com.example.jeebapi.models.Provider
 import com.example.jeebapi.models.Transactions
 import com.example.jeebapi.repository.CustomerRepository
@@ -19,7 +17,6 @@ import jakarta.persistence.EntityNotFoundException
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
-import java.util.Optional
 
 @Service
 class InvoiceService(
@@ -88,7 +85,7 @@ class InvoiceService(
             transactions.add(
                 Transactions(
                     price = itemDto.price,
-                    amount = itemDto.quantity.toInt(),
+                    quantity = itemDto.quantity.toInt(),
                     invoice = newInvoice,
                     product = product,
                     user = user,
@@ -148,11 +145,12 @@ class InvoiceService(
         return invoiceResponses
     }
 
-
+    @Transactional
     fun update(request: Invoicedto) {
         // --- 1. Fetch Core Parent Entities ---
-        val customer = customerRepository.findById(request.customerId ?: throw IllegalArgumentException("Customer ID is missing"))
-            .orElseThrow { EntityNotFoundException("Customer not found with ID: ${request.customerId}") }
+        val customer =
+            customerRepository.findById(request.customerId ?: throw IllegalArgumentException("Customer ID is missing"))
+                .orElseThrow { EntityNotFoundException("Customer not found with ID: ${request.customerId}") }
 
         val user = userRepository.findById(request.userId ?: throw IllegalArgumentException("User ID is missing"))
             .orElseThrow { EntityNotFoundException("User not found with ID: ${request.userId}") }
@@ -169,19 +167,13 @@ class InvoiceService(
             this.user = user
             this.customer = customer
         }
-        // Note: You don't need to save the invoice here. JPA's dirty checking within a
-        // @Transactional context will automatically update it when the transaction commits.
-        // However, we need a saved reference for new items, so `save` is okay.
+
         val savedInvoice = invoiceRepository.save(actualInvoice)
 
-        // --- 4. Prepare for Item Processing ---
-        // Create a mutable map of items currently in the database for this invoice.
-        // We will remove items from this map as we process them. Anything left at the end
-        // is an item that was removed by the user.
+
         val existingItemsMap = actualInvoice.items.associateBy { it.product?.id }.toMutableMap()
 
         val itemsToSave = mutableListOf<InvoProducts>()
-        // The list of items to be deleted will be determined by what's left in existingItemsMap.
         val transactions = mutableListOf<Transactions>()
         for (itemDto in request.items) {
             val product = itemDto.productId?.let { productRepository.findById(it) }
@@ -213,78 +205,65 @@ class InvoiceService(
                     this.name = itemDto.name
                     this.provider = provider
                 }
+                val existingtransaction = transaction.findByInvoiceIdAndProductId(savedInvoice.id, itemDto.productId!!)
 
+                if (existingtransaction !== null) {
+                    val transactionToUpdate = existingtransaction.get()
+                    transactionToUpdate.quantity = itemDto.quantity
+                    transactionToUpdate.price = itemDto.price
+                }
+                    itemsToSave.add(existingItem)
+                    existingItemsMap.remove(itemDto.productId)
 
+                } else {
 
+                    productsService.updateAmount(product.id, -itemDto.quantity.toInt())
 
-                itemsToSave.add(existingItem)
-                existingItemsMap.remove(itemDto.productId)
-
-            } else {
-                // --- CASE 2: NEW ITEM -> ADD IT ---
-
-                // Decrease product stock by the quantity of the new item.
-                productsService.updateAmount(product.id, -itemDto.quantity.toInt())
-
-                // Create the new invoice item entity
-                itemsToSave.add(
-                    InvoProducts(
-                        name = itemDto.name,
-                        quantity = itemDto.quantity,
-                        price = itemDto.price,
-                        invoice = savedInvoice,
-                        provider = provider,
-                        product = product
+                    // Create the new invoice item entity
+                    itemsToSave.add(
+                        InvoProducts(
+                            name = itemDto.name,
+                            quantity = itemDto.quantity,
+                            price = itemDto.price,
+                            invoice = savedInvoice,
+                            provider = provider,
+                            product = product
+                        )
                     )
-                )
-              transactions.add(Transactions(
-                  price = itemDto.price,
-                  amount = itemDto.quantity.toInt(),
-                  invoice = savedInvoice,
-                  product = product,
-                  provider = provider,
-                  user = user
-              ))
-
-
-
-
-
-
-
-
-
-
-
+                    transactions.add(
+                        Transactions(
+                            price = itemDto.price,
+                            quantity = itemDto.quantity,
+                            invoice = savedInvoice,
+                            product = product,
+                            provider = provider,
+                            user = user
+                        )
+                    )
+                }
 
 
             }
 
-        }
+            // --- 6. Process Removed Items ---
+            val itemsToDelete = existingItemsMap.values.toList()
+            if (itemsToDelete.isNotEmpty()) {
+                for (itemToRemove in itemsToDelete) {
+                    productsService.updateAmount(itemToRemove.product?.id, itemToRemove.quantity.toInt())
+                    actualInvoice.items.remove(itemToRemove)
+                    invo_items.delete(itemToRemove.product?.id, savedInvoice.id)
+                    transaction.deletebyid(itemToRemove.product?.id!!, savedInvoice.id)
 
-        // --- 6. Process Removed Items ---
-        // Any items left in `existingItemsMap` were not in the incoming request,
-        // which means they were removed by the user.
-        val itemsToDelete = existingItemsMap.values.toList()
+                }
 
-        if (itemsToDelete.isNotEmpty()) {
-            for (itemToRemove in itemsToDelete) {
-                productsService.updateAmount(itemToRemove.product?.id, itemToRemove.quantity.toInt())
-
-                // Break the relationship with the invoice
-                actualInvoice.items.remove(itemToRemove)
             }
 
-            // Now delete from repository
-            invo_items.deleteAll(itemsToDelete)
-        }
+            if (itemsToSave.isNotEmpty()) {
+                invo_items.saveAll(itemsToSave)
+                transaction.saveAll(transactions)
+            }
 
-        if (itemsToSave.isNotEmpty()) {
-            invo_items.saveAll(itemsToSave)
-            transaction.saveAll(transactions)
         }
-
-    }
 
 
 }

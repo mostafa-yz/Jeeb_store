@@ -10,14 +10,11 @@ import jakarta.persistence.ManyToOne
 data class TransactionDto(
     val id: Int,
     val price: Double = 0.0,
-    val amount: Int = 0,
+    val quantity: Int = 0,
     val Invoice_id: Invoice,
     val product_id: Products,
     val user_id: User,
     val provider_id: Provider,
-
-
-
 
 
     )

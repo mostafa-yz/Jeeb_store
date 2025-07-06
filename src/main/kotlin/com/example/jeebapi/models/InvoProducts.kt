@@ -15,7 +15,7 @@ data class InvoProducts(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long = 0,
     var name: String = "",
-    var quantity: Long = 0L,
+    var quantity: Int = 0,
     var price: Double = 0.0,
 
     @ManyToOne

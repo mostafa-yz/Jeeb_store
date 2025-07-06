@@ -18,9 +18,9 @@ data class Products(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
-    val name: String = "",
-    val category: String = "",
-    val price: Double = 0.0,
+    var name: String = "",
+    var category: String = "",
+    var price: Double = 0.0,
     var quantity: Int = 0,
     val profit: Double = 0.0,
     val qrcode: String = "",
