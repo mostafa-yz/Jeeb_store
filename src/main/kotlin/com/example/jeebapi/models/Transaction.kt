@@ -16,13 +16,15 @@ class Transactions(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = 0,
-
     var price: Double = 0.0,
     var quantity: Int?=0,
 
     @ManyToOne
     @JoinColumn(name = "Invoice_id", nullable = false)
     val invoice: Invoice? = null, // Corrected: Nullable with a default value
+
+
+
 
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)

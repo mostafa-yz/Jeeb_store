@@ -1,6 +1,8 @@
 package com.example.jeebapi.services
 
+import com.example.jeebapi.DTO.ActionType
 import com.example.jeebapi.DTO.Productdto
+import com.example.jeebapi.DTO.Storagedto
 import com.example.jeebapi.models.Products
 import com.example.jeebapi.models.Provider
 import com.example.jeebapi.repository.ProductsRepository
@@ -12,6 +14,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
+import java.time.LocalDateTime
 import java.util.UUID
 
 
@@ -19,7 +22,8 @@ import java.util.UUID
 class ProductsService(
     val productsRepository: ProductsRepository,
     private val providerRepository: ProviderRepository,
-    private val providerService: ProviderService
+    private val providerService: ProviderService,
+    private val stoServicelog: StoServicelog
 ) {
 
 
@@ -158,6 +162,18 @@ class ProductsService(
             provider = providerEntity
         )
         productsRepository.save(newProductEntity)
+
+        val logEntry = Storagedto(
+            quantity = createRequest.quantity,
+            action = ActionType.ADD,
+            reason = " update amount  '${createRequest.name}' (ID: ${createRequest.id})",
+            date =  LocalDateTime.now(),
+            product_id =newProductEntity.id,
+            provider_id = providerEntity!!.id
+        )
+
+        stoServicelog.create(listOf(logEntry))
+
         return Productdto(
             id = createRequest.id,
             name = createRequest.name,
@@ -173,10 +189,23 @@ class ProductsService(
 
     @Transactional
     fun deleteProduct(id: Long) {
+        // 1. Find the product to ensure it exists.
+        val productToDelete = productsRepository.findById(id)
+            .orElseThrow { ResourceNotFoundException("Product with ID $id not found and cannot be deleted.") }
 
-        productsRepository.getProductsById(id) ?: throw ResourceNotFoundException("Provider with ID $id not found.")
+        // 2. Create the single log DTO before deleting the product.
+        val logEntry = Storagedto(
+            quantity = productToDelete.quantity,
+            action = com.example.jeebapi.DTO.ActionType.REMOVE,
+            reason = "Deleted product '${productToDelete.name}' (ID: ${productToDelete.id})",
+            date =  LocalDateTime.now(),
+            product_id = productToDelete.id,
+            provider_id = productToDelete.id
+        )
 
-        productsRepository.deleteById(id)
+       stoServicelog.create(listOf(logEntry))
+
+        productsRepository.delete(productToDelete)
     }
 
 
@@ -207,7 +236,7 @@ class ProductsService(
         val product = productsRepository.findByIdOrNull(productId)
             ?: throw ResourceNotFoundException("Product with ID $productId not found")
 
-        // Check for sufficient stock only if decreasing
+
         if (quantityChange < 0 && product.quantity < -quantityChange) {
             throw InsufficientStockException("Not enough stock for product '${product.name}'. Available: ${product.quantity}, Requested: ${-quantityChange}")
         }
@@ -217,7 +246,26 @@ class ProductsService(
         } catch (ex: OptimisticLockingFailureException) {
             throw ConcurrencyConflictException("Product stock was updated concurrently. Please try again.", ex)
         }
+
+        val logEntry = Storagedto(
+            quantity = product.quantity,
+            action = ActionType.RECHARGE,
+            reason = " update amount  '${product.name}' (ID: ${product.id})",
+            date =  LocalDateTime.now(),
+            product_id = product.id,
+            provider_id = product.id
+        )
+
+        stoServicelog.create(listOf(logEntry))
+
+
+
+
+
+
     }
+
+
 
     class ResourceNotFoundException(message: String) : RuntimeException(message)
 }

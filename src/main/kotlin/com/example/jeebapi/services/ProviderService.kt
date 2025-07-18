@@ -34,6 +34,14 @@ class ProviderService(
         return providers.findByPhone(phoneNumber)!!.orElse(null)
     }
 
+    fun getall(): List<Provider> {
+        return providers.findAll()
+
+    }
+
+
+
+
 
     fun getProviderById(id: Long): Providerdto? {
         val providerEntity: Provider? = providers.findprovider(id)

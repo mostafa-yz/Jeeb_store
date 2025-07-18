@@ -4,6 +4,7 @@ import com.example.jeebapi.auth.JwtService
 import com.example.jeebapi.models.User
 import com.example.jeebapi.repository.UserRepository
 import com.example.jeebapi.services.UserService
+import org.springframework.http.ResponseCookie
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.authentication.AuthenticationManager
@@ -45,6 +46,13 @@ class UserController(
     fun login(@RequestBody request: AuthRequest): ResponseEntity<AuthResponse> {
         val auth = UsernamePasswordAuthenticationToken(request.username, request.password)
         authenticationManager.authenticate(auth)
+
+
+
+
+
+
+
 
         val user = userDetailsService.loadUserByUsername(request.username)
         val token = jwtService.generateToken(user.username)

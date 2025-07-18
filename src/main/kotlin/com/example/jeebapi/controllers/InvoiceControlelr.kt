@@ -61,8 +61,6 @@ class InvoiceControlelr(
     fun updateInvoice(@RequestBody request: Invoicedto) {
         invoiceService.update(request)
 
-
-
     }
 
 

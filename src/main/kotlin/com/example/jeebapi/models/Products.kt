@@ -1,6 +1,5 @@
 package com.example.jeebapi.models
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
@@ -23,8 +22,11 @@ data class Products(
     var price: Double = 0.0,
     var quantity: Int = 0,
     val profit: Double = 0.0,
-    val qrcode: String = "",
+    val qrcode: String? = "",
     val position: String = "",
+
+
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "provider_id")

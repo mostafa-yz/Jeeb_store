@@ -41,8 +41,20 @@ class CustomerController(
     @GetMapping("/{id}")
     fun getById(@PathVariable id: Long) {
         customerService.findById(id)
-
     }
+
+
+    // In your CustomerController
+    @GetMapping("/phone/{phone}")
+    fun getbyphone(@PathVariable phone: String): Customer? { // It's good practice to define the return type
+        return customerService.findByPhone(phone) // Add "return" here
+    }
+
+
+
+
+
+
 
 
 

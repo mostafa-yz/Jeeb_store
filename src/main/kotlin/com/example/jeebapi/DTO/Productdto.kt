@@ -10,7 +10,7 @@ data class Productdto(
     val price: Double,
     val quantity: Int,
     val profit: Double,
-    val qrcode: String,
+    val qrcode: String?,
     val position: String,
     val providerId: Long?
 

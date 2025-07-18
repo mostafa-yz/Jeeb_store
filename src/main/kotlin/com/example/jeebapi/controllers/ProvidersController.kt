@@ -73,6 +73,15 @@ class ProvidersController(
 
 
 
+    @GetMapping("/getall")
+    fun getAll(): List<Provider> {
+       return providerService.getall()
+    }
+
+
+
+
+
 
 
 

@@ -15,17 +15,17 @@ class JwtService(@Autowired val jwtProperties: JwtProperties) {
 
     private val key = Keys.hmacShaKeyFor(jwtProperties.secret.toByteArray())
 
-    fun generateToken(username: String): String {
-        val now = Date()
-        val expiryDate = Date(now.time + jwtProperties.expiration)
+        fun generateToken(username: String): String {
+            val now = Date()
+            val expiryDate = Date(now.time + jwtProperties.expiration)
 
-        return Jwts.builder()
-            .setSubject(username)
-            .setIssuedAt(now)
-            .setExpiration(expiryDate)
-            .signWith(key, SignatureAlgorithm.HS256)
-            .compact()
-    }
+            return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact()
+        }
 
     fun extractUsername(token: String): String? =
         try {

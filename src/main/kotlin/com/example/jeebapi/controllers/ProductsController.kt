@@ -1,8 +1,11 @@
 package com.example.jeebapi.controllers
 
 import com.example.jeebapi.DTO.Productdto
+import com.example.jeebapi.DTO.Storagedto
+import com.example.jeebapi.models.StorageLog
 import com.example.jeebapi.services.ProductsService
 import com.example.jeebapi.services.RechargeService
+import com.example.jeebapi.services.StoServicelog
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -22,7 +25,8 @@ import org.springframework.web.multipart.MultipartFile
 @RequestMapping("/products")
 class ProductsController(
     private val productsService: ProductsService,
-    private val recharge: RechargeService
+    private val recharge: RechargeService,
+    private val log : StoServicelog
 ) {
 
 
@@ -109,6 +113,34 @@ class ProductsController(
             ResponseEntity.badRequest().body("Failed to upload file: ${e.message}")
         }
     }
+
+
+    // In your Controller file
+
+    @PutMapping("/upquan")
+    fun updateQuantityByParam(@RequestParam id: Long, @RequestParam amount: Int): ResponseEntity<String> {
+        try {
+            productsService.updateAmount(id, amount)
+            return ResponseEntity.ok("Product with ID $id updated successfully.")
+        } catch (ex: Exception) {
+            return ResponseEntity.badRequest().body(ex.message)
+        }
+    }
+
+
+     @GetMapping("/log")
+     fun getlog():List<Storagedto>{
+
+             return  log.getall()
+
+     }
+
+
+
+
+
+
+
 
 
 
