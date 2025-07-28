@@ -4,138 +4,170 @@ import com.example.jeebapi.DTO.ActionType
 import com.example.jeebapi.DTO.Storagedto
 import com.example.jeebapi.models.Products
 import com.example.jeebapi.repository.ProductsRepository
+import org.apache.poi.ss.usermodel.Cell
+import org.apache.poi.ss.usermodel.DataFormatter
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
+import java.time.Instant
 import java.time.LocalDateTime
-import java.util.UUID
+import java.time.ZoneOffset
+import java.util.*
 
+// A DTO to safely hold potentially null data from each Excel row.
+data class ProductExcelRow(
+    val rowIndex: Int,
+    val id: Long?,
+    val name: String?,
+    val category: String?,
+    val price: Double?,
+    val quantity: Int?
+)
 
 @Service
 class RechargeService(
     val productsRepository: ProductsRepository,
-    val stoServicelog: StoServicelog
+    val stoServicelog: StoServicelog,
 ) {
+    // Add a professional logger
+    private val log = LoggerFactory.getLogger(RechargeService::class.java)
 
-    fun upload(file: MultipartFile) {
+    fun upload(file: MultipartFile): String {
         val workbook = XSSFWorkbook(file.inputStream)
-        val sheet = workbook.getSheetAt(0) // Get the first sheet
+        val sheet = workbook.getSheetAt(0)
+        val dataFormatter = DataFormatter()
 
-        val products = mutableListOf<Products>()
-        try {
-            for (rowIndex in 1..sheet.lastRowNum) {
-                val row = sheet.getRow(rowIndex)
-                val id = row.getCell(0).numericCellValue.toLong()
-                val name = row.getCell(1).toString()
-                val category = row.getCell(2).toString()
-                val price = row.getCell(3).numericCellValue
-                val quantity = row.getCell(4).numericCellValue.toInt()
-                products.add(
-                    Products(
-                        id, name, category, price, quantity
-                    )
+        val excelRows = mutableListOf<ProductExcelRow>()
+
+        for (rowIndex in 1..sheet.lastRowNum) {
+            val row = sheet.getRow(rowIndex) ?: continue
+            excelRows.add(
+                ProductExcelRow(
+                    rowIndex = rowIndex + 1,
+                    id = getCellAsLong(row.getCell(0), dataFormatter),
+                    name = getCellAsString(row.getCell(1), dataFormatter),
+                    category = getCellAsString(row.getCell(2), dataFormatter),
+                    price = getCellAsDouble(row.getCell(3), dataFormatter),
+                    quantity = getCellAsInt(row.getCell(4), dataFormatter)
                 )
-            }
-            validateRow(products)
-            validate(products)
-
-
-            workbook.close()
-        } catch (e: Exception) {
-
+            )
         }
+        workbook.close()
+        log.info("Parsed ${excelRows.size} rows from Excel file: ${file.originalFilename}")
 
-
+        // Process the data and return the result message
+        return validateAndSave(excelRows)
     }
 
-    fun validate(products: MutableList<Products>) {
-        val updatedProducts = mutableListOf<Products>()
-        val storagelog=mutableListOf<Storagedto>()
-        try {
-            for (item in products) {
-                val existing = productsRepository.findById(item.id)
-                if (existing.isPresent) {
-                    var existingProduct = existing.get()
-                    existingProduct.name = item.name
-                    existingProduct.category = item.category
-                    existingProduct.price = item.price
-                    existingProduct.quantity = item.quantity
-                    updatedProducts.add(existingProduct)
-                } else {
-                    val newProductEntity = Products(
-                        name = item.name,
-                        category = item.category,
-                        price = item.price,
-                        quantity = item.quantity,
-                        profit = item.profit,
-                        qrcode = UUID.randomUUID().toString().replace("-", "").substring(0, 10),
-                        position = item.position,
-                        provider = item.provider
-                    )
-
-                    productsRepository.save(newProductEntity)
-                    val storageLogDTO = Storagedto(
-                        quantity =item.quantity,
-                        action =ActionType.RECHARGE,
-                        reason =" new product",
-                        date = LocalDateTime.now(),
-                        product_id =newProductEntity.id,
-                        provider_id = newProductEntity.provider!!.id,
-                    )
-                    storagelog.add(storageLogDTO)
-                }
-
-
-
-
-
-            }
-
-            stoServicelog.create(storagelog)
-            productsRepository.saveAll(updatedProducts)
-        } catch (e: Exception) {
-            println("Error during product validation and save: ${e.message}")
-            throw e
+    private fun validateAndSave(excelRows: List<ProductExcelRow>): String {
+        val validationProblems = validateRows(excelRows)
+        if (validationProblems.isNotEmpty()) {
+            throw IllegalArgumentException("Invalid data in Excel file: ${validationProblems.joinToString()}")
         }
 
+        val productsToSave = mutableListOf<Products>()
+        excelRows.forEach { row ->
+            if (row.id != null) {
+                productsRepository.findById(row.id).ifPresentOrElse({ dbProduct ->
+                    dbProduct.price = row.price!!
+                    dbProduct.quantity += row.quantity!!
+                    productsToSave.add(dbProduct)
+                }, {
+                    throw NoSuchElementException("Product with ID ${row.id} from row ${row.rowIndex} not found.")
+                })
+            } else {
+                productsToSave.add(Products(
+                    name = row.name!!,
+                    category = row.category!!,
+                    price = row.price!!,
+                    quantity = row.quantity!!,
+                    profit = 0.0,
+                    position = "Default Position",
+                    provider = null,
+                    qrcode = UUID.randomUUID().toString().replace("-", "").substring(0, 10)
+                ))
+            }
+        }
+
+        if (productsToSave.isEmpty()) {
+            val message = "No valid products found to save or update."
+            log.warn(message)
+            return message
+        }
+        log.info("Preparing to save or update ${productsToSave.size} product(s).")
+
+        val savedProducts = productsRepository.saveAll(productsToSave)
+        log.info("Successfully saved or updated ${savedProducts.size} product(s) in the database.")
+
+        val logEntries = savedProducts.map { savedProduct ->
+            val originalRow = excelRows.find { row -> if (row.id != null) row.id == savedProduct.id else row.name == savedProduct.name }
+            val quantityChange = originalRow?.quantity ?: 0
+            val isUpdate = originalRow?.id != null
+
+            Storagedto(
+                quantity = quantityChange,
+                action = if (isUpdate) ActionType.RECHARGE else ActionType.ADD,
+                reason = if (isUpdate) "Recharged '${savedProduct.name}' (ID: ${savedProduct.id}) from Excel"
+                else "Added new product '${savedProduct.name}' (ID: ${savedProduct.id}) from Excel",
+                date = LocalDateTime.now().toInstant(ZoneOffset.UTC),
+                qr = savedProduct.qrcode,
+                productId = savedProduct.id,
+                productName = savedProduct.name.toString(),
+                providerId = savedProduct.provider?.id,
+                providerName = savedProduct.provider?.name
+            )
+        }
+        log.info("Created ${logEntries.size} log entries to be saved.")
+
+        if (logEntries.isNotEmpty()) {
+            stoServicelog.create(logEntries)
+            log.info("Successfully sent ${logEntries.size} log entries to the logging service.")
+        } else {
+            log.warn("No log entries were generated after saving products.")
+        }
+
+        return "Successfully processed file. Saved or updated ${savedProducts.size} products and created ${logEntries.size} log entries."
     }
 
-    data class ValidationResponse(
-        val isValid: Boolean,
-        val problems: List<String>
-    )
+    private fun getCellAsString(cell: Cell?, formatter: DataFormatter): String? = formatter.formatCellValue(cell).trim().takeIf { it.isNotBlank() }
+    private fun getCellAsLong(cell: Cell?, formatter: DataFormatter): Long? = getCellAsString(cell, formatter)?.toLongOrNull()
+    private fun getCellAsInt(cell: Cell?, formatter: DataFormatter): Int? = getCellAsString(cell, formatter)?.toIntOrNull()
+    private fun getCellAsDouble(cell: Cell?, formatter: DataFormatter): Double? = getCellAsString(cell, formatter)?.toDoubleOrNull()
 
-    fun validateRow(products: List<Products>): ValidationResponse {
+// In RechargeService.kt
+
+    // In RechargeService.kt
+
+    private fun validateRows(rows: List<ProductExcelRow>): List<String> {
         val problems = mutableListOf<String>()
-        for (item in products) {
-            if (item.id <= 0) {
-                problems.add("Invalid id: must be greater than 0. Got ${item.id}")
+        rows.forEach { row ->
+            // This check now ensures the ID is a valid, positive number for an update.
+            if (row.id != null && row.id > 0) {
+                // --- Validation for EXISTING products ---
+                if (row.price == null || row.price < 0) {
+                    problems.add("Row ${row.rowIndex}: Price must be a non-negative number for update.")
+                }
+                if (row.quantity == null || row.quantity <= 0) {
+                    problems.add("Row ${row.rowIndex}: Quantity must be a positive number for update.")
+                }
             }
-            if (item.name.isBlank()) {
-                problems.add("Invalid name: cannot be blank.")
-            }
-            if (item.category.isBlank()) {
-                problems.add("Invalid category: cannot be blank.")
-            }
-            if (item.price < 0) {
-                problems.add("Invalid price: must be non-negative. Got ${item.price}")
-            }
-            if (item.quantity < 0) {
-                problems.add("Invalid quantity: must be non-negative. Got ${item.quantity}")
+            else {
+                // --- Validation for NEW products (ID is blank or 0) ---
+                if (row.name.isNullOrBlank()) {
+                    problems.add("Row ${row.rowIndex}: Product name is missing for new product.")
+                }
+                if (row.category.isNullOrBlank()) {
+                    problems.add("Row ${row.rowIndex}: Category is missing for new product.")
+                }
+                if (row.price == null || row.price < 0) {
+                    problems.add("Row ${row.rowIndex}: Price must be a non-negative number for new product.")
+                }
+                if (row.quantity == null || row.quantity <= 0) {
+                    problems.add("Row ${row.rowIndex}: Quantity must be a positive number for new product.")
+                }
             }
         }
-
-        return ValidationResponse(isValid = problems.isEmpty(), problems = problems)
+        return problems
     }
-
-
 }
-
-
-
-
-
-
-
-
-

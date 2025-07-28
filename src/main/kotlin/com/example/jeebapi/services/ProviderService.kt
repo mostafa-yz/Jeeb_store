@@ -15,138 +15,124 @@ import kotlin.String
 
 
 @Service
-class ProviderService(
-    private val providers: ProviderRepository,
+class ProviderService(private val providers: ProviderRepository) {
+    private val logger = LoggerFactory.getLogger(ProviderService::class.java)
 
 
-) {
-
-
-    ///add new provider
-    fun create(provider: Provider): Provider {
-        val existing = providers.findByPhone(provider.phonenumber)
-
-      return  providers.save(provider)
-    }
-
-    ///seacrh by phone numbger
-    fun findProvider(phoneNumber: String): Provider? {
-        return providers.findByPhone(phoneNumber)!!.orElse(null)
-    }
-
-    fun getall(): List<Provider> {
-        return providers.findAll()
-
+    fun getAll(): List<Providerdto> {
+        return providers.findAllWithProducts().map { it.toDto() }
     }
 
 
-
-
-
-    fun getProviderById(id: Long): Providerdto? {
-        val providerEntity: Provider? = providers.findprovider(id)
-
-
-        return providerEntity?.let { provider ->
-
-            val productSummaries = provider.products.map { product ->
-                Productdto(
-                    id = product.id,
-                    name = product.name,
-                    category = product.category,
-                    price = product.price,
-                    quantity = product.quantity,
-                    profit = product.profit,
-                    qrcode = product.qrcode,
-                    position = product.position,
-                    providerId = id
-                )
-            }
-            println("Fetched products: ${productSummaries.size} items for DTO mapping")
-
-
-            Providerdto(
-                id = provider.id,
-                name = provider.name,
-                phonenumber = provider.phonenumber,
-                email = provider.email,
-                instagramid = provider.instagramid,
-                shabanumber = provider.shabanumber,
-                cardnumber = provider.cardnumber,
-                products = productSummaries // Include the list of ProductSummaryDto
-            )
-        }
+    fun getById(id: Long): Providerdto {
+        return providers.findWithProductsById(id)
+            .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Provider with ID $id not found") }
+            .toDto()
     }
 
+    fun getByPhoneNumber(phoneNumber: String): Providerdto {
+        val provider = providers.findByPhonenumber(phoneNumber)
+            .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Provider with phone number $phoneNumber not found") }
+        return getById(provider.id)
+    }
 
-    ////update
     @Transactional
-    fun update(provider: Provider): Provider? {
-        if (!providers.existsById(provider.id)) {
-            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found")
+    fun create(request: Providerdto): Providerdto {
+        if (providers.findByPhonenumber(request.phonenumber).isPresent) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "A provider with phone number ${request.phonenumber} already exists.")
         }
-        return providers.save(
-            provider.copy(
-                provider.id,
-                provider.phonenumber,
-                provider.name,
-                provider.phonenumber,
-                instagramid = provider.instagramid,
-                shabanumber = provider.shabanumber,
-                cardnumber = provider.cardnumber,
 
-                )
+        val provider = Provider(
+            name = request.name,
+            phonenumber = request.phonenumber,
+            email = request.email,
+            instagramid = request.instagramid,
+            shabanumber = request.shabanumber,
+            cardnumber = request.cardnumber
         )
+        val savedProvider = providers.save(provider)
+        return savedProvider.toDto()
     }
 
-
-    // Delete customer by ID
     @Transactional
-    fun deleteById(id: Long) {
+    fun update(id: Long, request: Providerdto): Providerdto {
+        val existingProvider = providers.findById(id)
+            .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Provider with ID $id not found") }
+
+        val updatedProvider = existingProvider.copy(
+            name = request.name,
+            phonenumber = request.phonenumber,
+            email = request.email,
+            instagramid = request.instagramid,
+            shabanumber = request.shabanumber,
+            cardnumber = request.cardnumber
+        )
+
+        val savedProvider = providers.save(updatedProvider)
+        return savedProvider.toDto()
+    }
+
+    @Transactional
+    fun delete(id: Long) {
         if (!providers.existsById(id)) {
-            throw ResponseStatusException(HttpStatus.NOT_FOUND, "provider not found")
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Provider with ID $id not found")
         }
         providers.deleteById(id)
     }
 
 
+    fun providerExists(productDto: Productdto): Provider? {
+        val providerId = productDto.providerId ?: return null
 
-
-
-
-    private val logger = LoggerFactory.getLogger(ProductsService::class.java)
-
-    fun providerExists(createRequest: Productdto): Provider? {
-        var providerEntity: Provider? = null
-        if (createRequest.providerId != null) {
-            providerEntity = providers.findByIdOrNull(createRequest.providerId)
-                ?: run {
-                    logger.warn("Provider with ID {} not found for product creation.", createRequest.providerId)
-                    throw ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Provider with ID ${createRequest.providerId} not found"
-                    )
-                }
-        }
-
-        return providerEntity
+        return providers.findById(providerId)
+            .orElseThrow {
+                logger.warn("Provider with ID {} not found during product operation.", providerId)
+                ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Provider with ID $providerId not found"
+                )
+            }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
+
+// Helper extension function to map a Provider entity to a Providerdto
+private fun Provider.toDto(): Providerdto = Providerdto(
+    id = this.id,
+    name = this.name,
+    phonenumber = this.phonenumber,
+    email = this.email,
+    instagramid = this.instagramid,
+    shabanumber = this.shabanumber,
+    cardnumber = this.cardnumber,
+    products = this.products.map { product ->
+        Productdto(
+            id = product.id,
+            name = product.name,
+            category = product.category,
+            price = product.price,
+            quantity = product.quantity.toLong(),
+            profit = product.profit,
+            qrcode = product.qrcode,
+            position = product.position,
+            providerId = this.id
+        )
+    }
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,5 +1,6 @@
 package com.example.jeebapi.controllers
 
+import com.example.jeebapi.DTO.Providerdto
 import com.example.jeebapi.models.Provider
 import com.example.jeebapi.services.ProviderService
 import org.springframework.http.HttpStatus
@@ -15,77 +16,76 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/providers")
-class ProvidersController(
-    private val providerService: ProviderService
-) {
+class ProviderController(private val providerService: ProviderService) {
 
-    //add provider
-    @PostMapping("/create")
-    fun create(@RequestBody provider: Provider): ResponseEntity<Any> {
-        return try {
-            providerService.create(provider)
-            ResponseEntity.ok("provider saved")
-        } catch (e: Exception) {
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error creating provider: ${e.message}")
-        }
+    /**
+     * GET /api/providers
+     * Returns a list of all providers with their products.
+     */
+    @GetMapping
+    fun getAllProviders(): ResponseEntity<List<Providerdto>> {
+        val providers = providerService.getAll()
+        return ResponseEntity.ok(providers)
     }
 
-
-    //find by phone
-    @GetMapping("/findprovider/{phone}")
-    fun findProvider(@PathVariable phone: String): ResponseEntity<Provider> {
-        val provider = providerService.findProvider(phone)
-        return if (provider != null) {
-            ResponseEntity.ok(provider)
-        } else {
-            ResponseEntity.notFound().build()
-        }
-    }
-
-    //get by id
-        @GetMapping("/provider/{id}")
-    fun getProvider(@PathVariable id: Long): ResponseEntity<Any> {
-        val provider = providerService.getProviderById(id)
-        println("Found provider: $id")
+    /**
+     * GET /api/providers/{id}
+     * Returns a single provider by its ID, including its products.
+     */
+    @GetMapping("/{id}")
+    fun getProviderById(@PathVariable id: Long): ResponseEntity<Providerdto> {
+        val provider = providerService.getById(id)
         return ResponseEntity.ok(provider)
-
     }
 
-
-    ///update
-    @PutMapping("/update/{id}")
-    fun updateProvider(@RequestBody provider: Provider): ResponseEntity<Any> {
-        providerService.update(provider)
-        return ResponseEntity.ok("provider updated")
+    /**
+     * GET /api/providers/by-phone/{phoneNumber}
+     * Returns a single provider by its phone number, including its products.
+     */
+    @GetMapping("/by-phone/{phoneNumber}")
+    fun getProviderByPhoneNumber(@PathVariable phoneNumber: String): ResponseEntity<Providerdto> {
+        val provider = providerService.getByPhoneNumber(phoneNumber)
+        return ResponseEntity.ok(provider)
     }
 
-
-
-
-    @DeleteMapping("/remove/{id}")
-    fun removeProvider(@PathVariable id: Long): ResponseEntity<Any> {
-        providerService.deleteById(id)
-        return ResponseEntity.ok("provider deleted")
+    /**
+     * POST /api/providers
+     * Creates a new provider.
+     */
+    @PostMapping
+    fun createProvider(@RequestBody request: Providerdto): ResponseEntity<Providerdto> {
+        val createdProvider = providerService.create(request)
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdProvider)
     }
 
-
-
-
-
-    @GetMapping("/getall")
-    fun getAll(): List<Provider> {
-       return providerService.getall()
+    /**
+     * PUT /api/providers/{id}
+     * Updates an existing provider.
+     */
+    @PutMapping("/{id}")
+    fun updateProvider(@PathVariable id: Long, @RequestBody request: Providerdto): ResponseEntity<Providerdto> {
+        val updatedProvider = providerService.update(id, request)
+        return ResponseEntity.ok(updatedProvider)
     }
 
-
-
-
-
-
-
-
-
-
-
+    /**
+     * DELETE /api/providers/{id}
+     * Deletes a provider by its ID.
+     */
+    @DeleteMapping("/{id}")
+    fun deleteProvider(@PathVariable id: Long): ResponseEntity<Unit> {
+        providerService.delete(id)
+        return ResponseEntity.noContent().build() // Returns HTTP 204 No Content
+    }
 }
+
+
+
+
+
+
+
+
+
+
+

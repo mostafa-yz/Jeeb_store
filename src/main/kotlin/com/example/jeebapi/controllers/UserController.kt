@@ -1,74 +1,70 @@
 package com.example.jeebapi.controllers
 
-import com.example.jeebapi.auth.JwtService
+import com.example.jeebapi.DTO.Userdto
 import com.example.jeebapi.models.User
-import com.example.jeebapi.repository.UserRepository
 import com.example.jeebapi.services.UserService
-import org.springframework.http.ResponseCookie
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.security.access.prepost.PreAuthorize
-import org.springframework.security.authentication.AuthenticationManager
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.userdetails.UserDetailsService
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/user")
-class UserController(
-    private val userService: UserService,
-    private val authenticationManager: AuthenticationManager,
-    private val jwtService: JwtService,
-    private val userDetailsService: UserDetailsService
+@RequestMapping("/users")
+class UserController(private val userService: UserService) {
 
-
-) {
+    /**
+     * POST /api/users
+     * Creates a new user. Restricted to admins by the UserService.
+     */
     @PostMapping
-    fun create(@RequestBody user: User): ResponseEntity<out Any?> {
-        return try {
-            userService.create(user)
-            ResponseEntity.status(201).body("user created")
-        } catch (e: IllegalStateException) {
-            ResponseEntity.badRequest().body(e.message)
-        } catch (e: Exception) {
-            ResponseEntity.status(500).body(mapOf("error" to "Server error"))
-
-        }
-
-
+    fun createUser(@RequestBody user: User): ResponseEntity<User> {
+        val createdUser = userService.create(user)
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdUser)
     }
 
-    @PostMapping("/login")
-    fun login(@RequestBody request: AuthRequest): ResponseEntity<AuthResponse> {
-        val auth = UsernamePasswordAuthenticationToken(request.username, request.password)
-        authenticationManager.authenticate(auth)
-
-
-
-
-
-
-
-
-        val user = userDetailsService.loadUserByUsername(request.username)
-        val token = jwtService.generateToken(user.username)
-        return ResponseEntity.ok(AuthResponse(token))
+    /**
+     * GET /api/users
+     * Retrieves a list of all users. Restricted to admins by the UserService.
+     */
+    @GetMapping
+    fun getAllUsers(): ResponseEntity<List<Userdto>> {
+        val users = userService.findAll()
+        return ResponseEntity.ok(users)
     }
 
-
-    @GetMapping("/find/{id}")
-    @PreAuthorize("isAuthenticated()")
-    fun findById(@PathVariable id: Long): User {
-        return userService.findById(id)
-        ResponseEntity.status(201).body("user created")
+    /**
+     * GET /api/users/{id}
+     * Retrieves a single user by their ID.
+     */
+    @GetMapping("/{id}")
+    fun getUserById(@PathVariable id: Long): ResponseEntity<User> {
+        val user = userService.findById(id)
+        return ResponseEntity.ok(user)
     }
 
+    /**
+     * PUT /api/users/{id}
+     * Updates an existing user. Restricted to admins by the UserService.
+     */
+    @PutMapping("/{id}")
+    fun updateUser(@PathVariable id: Long, @RequestBody user: User): ResponseEntity<User> {
+        val updatedUser = userService.update(id, user)
+        return ResponseEntity.ok(updatedUser)
+    }
 
+    /**
+     * DELETE /api/users/{id}
+     * Deletes a user. Restricted to admins by the UserService.
+     */
+    @DeleteMapping("/{id}")
+    fun deleteUser(@PathVariable id: Long): ResponseEntity<Void> {
+        userService.deleteById(id)
+        return ResponseEntity.noContent().build() // Returns HTTP 204 No Content
+    }
 }
-
-data class AuthRequest(val username: String, val password: String)
-data class AuthResponse(val token: String)

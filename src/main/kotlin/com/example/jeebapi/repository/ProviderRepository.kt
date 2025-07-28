@@ -12,15 +12,14 @@ interface ProviderRepository : JpaRepository<Provider, Long> {
 
 
 
-    @Query("SELECT p FROM Provider p WHERE p.phonenumber LIKE %:phone%")
-    fun findByPhone(@Param("phone") phone: String): Optional<Provider>?
+    fun findByPhonenumber(phonenumber: String): Optional<Provider>
 
+    @Query("SELECT p FROM Provider p LEFT JOIN FETCH p.products WHERE p.id = :id")
+    fun findWithProductsById(@Param("id") id: Long): Optional<Provider>
 
-
-    @Query("SELECT DISTINCT p FROM Provider p LEFT JOIN FETCH p.products WHERE p.id = :id")
-    fun findprovider(@Param("id") id: Long): Provider?
-
-
+    // ✅ This query efficiently fetches all providers with their products, avoiding N+1 issues.
+    @Query("SELECT DISTINCT p FROM Provider p LEFT JOIN FETCH p.products")
+    fun findAllWithProducts(): List<Provider>
 
 
 

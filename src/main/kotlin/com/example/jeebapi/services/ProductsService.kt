@@ -4,9 +4,9 @@ import com.example.jeebapi.DTO.ActionType
 import com.example.jeebapi.DTO.Productdto
 import com.example.jeebapi.DTO.Storagedto
 import com.example.jeebapi.models.Products
-import com.example.jeebapi.models.Provider
 import com.example.jeebapi.repository.ProductsRepository
 import com.example.jeebapi.repository.ProviderRepository
+import jakarta.persistence.EntityNotFoundException
 import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.dao.OptimisticLockingFailureException
@@ -14,7 +14,9 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
+import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 
 
@@ -42,7 +44,7 @@ class ProductsService(
                 name = productEntity.name,
                 category = productEntity.category,
                 price = productEntity.price,
-                quantity = productEntity.quantity,
+                quantity = productEntity.quantity.toLong(),
                 profit = productEntity.profit,
                 qrcode = productEntity.qrcode,
                 position = productEntity.position,
@@ -72,7 +74,7 @@ class ProductsService(
             name = productEntity.name,
             category = productEntity.category,
             price = productEntity.price,
-            quantity = productEntity.quantity,
+            quantity = productEntity.quantity.toLong(),
             profit = productEntity.profit,
             qrcode = productEntity.qrcode,
             position = productEntity.position,
@@ -98,7 +100,7 @@ class ProductsService(
             name = productEntity.name,
             category = productEntity.category,
             price = productEntity.price,
-            quantity = productEntity.quantity,
+            quantity = productEntity.quantity.toLong(),
             profit = productEntity.profit,
             qrcode = productEntity.qrcode,
             position = productEntity.position,
@@ -125,7 +127,7 @@ class ProductsService(
                 name = productEntity.name,
                 category = productEntity.category,
                 price = productEntity.price,
-                quantity = productEntity.quantity,
+                quantity = productEntity.quantity.toLong(),
                 profit = productEntity.profit,
                 qrcode = productEntity.qrcode,
                 position = productEntity.position,
@@ -139,95 +141,104 @@ class ProductsService(
 
     @Transactional
     fun createProduct(createRequest: Productdto): Productdto {
+        val providerEntity = createRequest.providerId?.let {
+            providerRepository.findByIdOrNull(it)
+                ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Provider with ID $it not found")
+        } ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Provider ID is required")
 
-        var providerEntity: Provider? = null
-        if (createRequest.providerId != null) {
-            providerEntity = providerRepository.findByIdOrNull(createRequest.providerId)
-                ?: run {
-                    logger.warn("Provider with ID {} not found for product creation.", createRequest.providerId)
-                    throw ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Provider with ID ${createRequest.providerId} not found"
-                    )
-                }
-        }
         val newProductEntity = Products(
             name = createRequest.name,
             category = createRequest.category,
             price = createRequest.price,
-            quantity = createRequest.quantity,
+            quantity = createRequest.quantity.toInt(),
             profit = createRequest.profit,
             qrcode = UUID.randomUUID().toString().replace("-", "").substring(0, 10),
             position = createRequest.position,
             provider = providerEntity
         )
-        productsRepository.save(newProductEntity)
+        val savedProduct = productsRepository.save(newProductEntity)
+        productsRepository.flush() // Ensure Product is persisted
 
         val logEntry = Storagedto(
-            quantity = createRequest.quantity,
+            quantity = createRequest.quantity.toInt(),
             action = ActionType.ADD,
-            reason = " update amount  '${createRequest.name}' (ID: ${createRequest.id})",
-            date =  LocalDateTime.now(),
-            product_id =newProductEntity.id,
-            provider_id = providerEntity!!.id
+            reason = "Added '${createRequest.name}' (ID: ${savedProduct.id})",
+            date = LocalDateTime.now().toInstant(ZoneOffset.UTC),
+            qr = savedProduct.qrcode,
+            productId = savedProduct.id,
+            providerId = providerEntity.id,
+            providerName = providerEntity.name,
+            productName = savedProduct.name,
         )
-
         stoServicelog.create(listOf(logEntry))
 
         return Productdto(
-            id = createRequest.id,
+            id = savedProduct.id,
             name = createRequest.name,
             category = createRequest.category,
             price = createRequest.price,
             quantity = createRequest.quantity,
             profit = createRequest.profit,
-            qrcode = createRequest.qrcode,
+            qrcode = savedProduct.qrcode,
             position = createRequest.position,
-            providerId = createRequest.providerId
+            providerId = providerEntity.id
         )
     }
 
     @Transactional
     fun deleteProduct(id: Long) {
-        // 1. Find the product to ensure it exists.
-        val productToDelete = productsRepository.findById(id)
-            .orElseThrow { ResourceNotFoundException("Product with ID $id not found and cannot be deleted.") }
+        // 1. Find the product or throw an exception if it doesn't exist.
+        val product = productsRepository.findById(id)
+            .orElseThrow { EntityNotFoundException("Product with ID '$id' not found.") }
 
-        // 2. Create the single log DTO before deleting the product.
+        //2. Mark the product as deleted.
+//
         val logEntry = Storagedto(
-            quantity = productToDelete.quantity,
-            action = com.example.jeebapi.DTO.ActionType.REMOVE,
-            reason = "Deleted product '${productToDelete.name}' (ID: ${productToDelete.id})",
-            date =  LocalDateTime.now(),
-            product_id = productToDelete.id,
-            provider_id = productToDelete.id
+            quantity = product.quantity,
+            action = ActionType.REMOVE,
+            reason = "delete '${product.name}' (ID: ${product.id})",
+            date = LocalDateTime.now().toInstant(ZoneOffset.UTC),
+            qr = null,
+            productId = product.id,
+            providerId = product.provider?.id,
+            providerName = product.provider?.name,
+            productName = product.name,
         )
+        stoServicelog.create(listOf(logEntry))
+        product.isDeleted = true
+        productsRepository.save(product)
 
-       stoServicelog.create(listOf(logEntry))
 
-        productsRepository.delete(productToDelete)
+
+
+
     }
-
 
     @Transactional
     fun updateProduct(updateRequest: Productdto) {
-        productsRepository.getProductsById(updateRequest.id) ?: throw ResponseStatusException(
-            HttpStatus.NOT_FOUND,
-            "product not found"
-        )
+        // 1. Fetch the existing product and store it in a variable
+        val existingProduct = productsRepository.findById(updateRequest.id)
+            .orElseThrow {
+                ResponseStatusException(HttpStatus.NOT_FOUND, "Product with ID ${updateRequest.id} not found")
+            }
+
+        // 2. Find the provider to associate with the product
         val provider = providerService.providerExists(updateRequest)
-        val newProductEntity = Products(
-            id = updateRequest.id,
+
+        // 3. Use copy() to create an updated instance from the existing one
+        val updatedProduct = existingProduct.copy(
             name = updateRequest.name,
             category = updateRequest.category,
             price = updateRequest.price,
-            quantity = updateRequest.quantity,
+            quantity = updateRequest.quantity.toInt(),
             profit = updateRequest.profit,
             qrcode = updateRequest.qrcode,
             position = updateRequest.position,
-            provider = provider
+            provider = provider // Assign the new provider reference
         )
-        productsRepository.save(newProductEntity)
+
+        // 4. Save the updated entity
+        productsRepository.save(updatedProduct)
     }
 
 
@@ -241,30 +252,32 @@ class ProductsService(
             throw InsufficientStockException("Not enough stock for product '${product.name}'. Available: ${product.quantity}, Requested: ${-quantityChange}")
         }
         product.quantity += quantityChange
+        val updatedProduct =productsRepository.save(product)
+
+
         try {
-            productsRepository.save(product)
+            val logEntry = Storagedto(
+                quantity = quantityChange,
+                action = ActionType.RECHARGE,
+                reason = "recharge '${updatedProduct.name}' (ID: ${updatedProduct.id})",
+                date = LocalDateTime.now().toInstant(ZoneOffset.UTC),
+                qr = null,
+                productId = updatedProduct.id,
+                providerId = updatedProduct.provider?.id,
+                providerName = updatedProduct.provider?.name,
+                productName = updatedProduct.name,
+            )
+            stoServicelog.create(listOf(logEntry))
+
+
         } catch (ex: OptimisticLockingFailureException) {
             throw ConcurrencyConflictException("Product stock was updated concurrently. Please try again.", ex)
         }
-
-        val logEntry = Storagedto(
-            quantity = product.quantity,
-            action = ActionType.RECHARGE,
-            reason = " update amount  '${product.name}' (ID: ${product.id})",
-            date =  LocalDateTime.now(),
-            product_id = product.id,
-            provider_id = product.id
-        )
-
-        stoServicelog.create(listOf(logEntry))
-
-
 
 
 
 
     }
-
 
 
     class ResourceNotFoundException(message: String) : RuntimeException(message)

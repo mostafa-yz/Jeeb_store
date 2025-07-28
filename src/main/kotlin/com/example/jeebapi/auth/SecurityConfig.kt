@@ -48,8 +48,9 @@ class SecurityConfig(
             }
             .authorizeHttpRequests { auth ->
                 auth
-                   .requestMatchers(HttpMethod.POST, "/user", "/user/login").permitAll()
+                   .requestMatchers(HttpMethod.POST, "/user", "/auth/login").permitAll()
                     .requestMatchers("/user/find/**").authenticated()
+
                     .anyRequest().authenticated()
 
             }
@@ -62,7 +63,8 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration().apply {
-            addAllowedOrigin("http://localhost:3000") 
+            addAllowedOrigin("http://localhost:3000")
+            addAllowedOrigin("http://192.168.1.101:3000")
             addAllowedHeader("*")
             addAllowedMethod("GET")
             addAllowedMethod("POST")

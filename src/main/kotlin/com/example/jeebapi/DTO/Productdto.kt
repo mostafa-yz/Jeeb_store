@@ -8,7 +8,7 @@ data class Productdto(
     val name: String,
     val category: String,
     val price: Double,
-    val quantity: Int,
+    val quantity: Long,
     val profit: Double,
     val qrcode: String?,
     val position: String,

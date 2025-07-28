@@ -10,7 +10,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 
-
+@Component // This annotation is crucial!
 class JwtAuthenticationFilter(
     private val jwtService: JwtService,
     private val userDetailsService: UserDetailsService
@@ -21,37 +21,35 @@ class JwtAuthenticationFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        try {
+        // 2. Remove header logic, get JWT from the cookie instead
+        val jwt = getJwtFromCookie(request)
 
+        if (jwt != null) {
+            val username = jwtService.extractUsername(jwt)
 
-            val authHeader = request.getHeader("Authorization")
-            val token = authHeader?.takeIf { it.startsWith("Bearer ") }?.substring(7)
+            if (SecurityContextHolder.getContext().authentication == null) {
+                val userDetails = this.userDetailsService.loadUserByUsername(username)
 
-            token?.let {
-                val username = jwtService.extractUsername(it)
-                println("🔓 Extracted username: $username")
-
-                if (username != null && SecurityContextHolder.getContext().authentication == null) {
-                    val userDetails = userDetailsService.loadUserByUsername(username)
-
-                    if (jwtService.isTokenValid(it, userDetails)) {
-                        val authToken = UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.authorities
-                        )
-                        authToken.details = WebAuthenticationDetailsSource().buildDetails(request)
-                        SecurityContextHolder.getContext().authentication = authToken
-
-                        println("✅ Authenticated user: ${userDetails.username}")
-                    } else {
-                        println("❌ Token invalid for user: $username")
-                    }
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    val authToken = UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.authorities
+                    )
+                    authToken.details = WebAuthenticationDetailsSource().buildDetails(request)
+                    SecurityContextHolder.getContext().authentication = authToken
+                    println("✅ Authenticated user from cookie: $username")
                 }
             }
-
-            filterChain.doFilter(request, response)
-
-        } catch (e: Exception) {
         }
+
+        filterChain.doFilter(request, response)
+    }
+
+    // 3. Add this helper function to read the cookie
+    private fun getJwtFromCookie(request: HttpServletRequest): String? {
+        // Return null if no cookies are present
+        val cookies = request.cookies ?: return null
+        // Find the cookie with the name "accessToken"
+        return cookies.find { it.name == "accessToken" }?.value
     }
 }
 

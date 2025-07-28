@@ -1,5 +1,7 @@
 package com.example.jeebapi.services
 
+import com.example.jeebapi.auth.CustomUserDetails
+import com.example.jeebapi.models.User
 import com.example.jeebapi.repository.UserRepository
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
@@ -7,30 +9,25 @@ import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
 
+
 @Service
 class UserDetailsServiceImpl(
-    private val    userRepository: UserRepository
+    private val userRepository: UserRepository
 ) : UserDetailsService {
 
     override fun loadUserByUsername(username: String): UserDetails {
         val user = userRepository.findByEmail(username)
-            ?: throw UsernameNotFoundException("User not found")
+            ?: throw UsernameNotFoundException("User not found with email: $username")
 
-        val role = when (user.accesslevel) {
-            0 -> "ROLE_USER"
-            1 -> "ROLE_MANAGER"
-            2 -> "ROLE_ADMIN"
-            else -> "ROLE_USER"
+        // 1. Correctly map the access level to an authority
+        // It now uses the constants from your User class
+        val authorities = if (user.accesslevel == User.LEVEL_ADMIN) {
+            listOf(SimpleGrantedAuthority("ROLE_ADMIN"))
+        } else {
+            listOf(SimpleGrantedAuthority("ROLE_CASHIER"))
         }
 
-
-
-
-        return org.springframework.security.core.userdetails.User
-            .withUsername(user.email)
-            .password(user.password)
-            .authorities(SimpleGrantedAuthority(role))
-            .build()
+        // 2. Return YOUR CustomUserDetails class, NOT Spring's default User
+        return CustomUserDetails(user, authorities)
     }
-
 }

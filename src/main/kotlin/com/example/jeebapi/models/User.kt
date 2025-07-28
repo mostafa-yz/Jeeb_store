@@ -31,3 +31,9 @@ data class User(
 
 
     )
+{
+    companion object {
+        const val LEVEL_CASHIER = 0
+        const val LEVEL_ADMIN = 10
+    }
+}

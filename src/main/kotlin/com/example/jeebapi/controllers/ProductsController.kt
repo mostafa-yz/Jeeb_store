@@ -6,6 +6,8 @@ import com.example.jeebapi.models.StorageLog
 import com.example.jeebapi.services.ProductsService
 import com.example.jeebapi.services.RechargeService
 import com.example.jeebapi.services.StoServicelog
+import org.slf4j.LoggerFactory
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -16,9 +18,9 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
+import java.time.LocalDate
 
 
 @RestController
@@ -68,21 +70,22 @@ class ProductsController(
     }
 
 
-    @DeleteMapping("delete/{id}")
-    fun deleteProduct(@PathVariable("id") id: Long): ResponseEntity<Map<String, String>> {
+
+
+
+
+    @DeleteMapping("/delete/{id}")
+    fun deleteProduct(@PathVariable id: Long): ResponseEntity<Any> {
+         val log = LoggerFactory.getLogger(ProductsController::class.java)
         return try {
             productsService.deleteProduct(id)
-            // Successfully deleted, return 200 OK with a message
-            val responseBody = mapOf("message" to "Product with ID $id deleted successfully.")
-            ResponseEntity.ok(responseBody)
-        } catch (ex: ProductsService.ResourceNotFoundException) {
-            // Return 404 Not Found if resource doesn't exist
-            val errorBody = mapOf("error" to (ex.message ?: "Product not found."))
-            ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorBody)
+            ResponseEntity.ok().body(mapOf("message" to "Product with ID $id deleted successfully."))
         } catch (ex: Exception) {
-            // Catch other unexpected errors
-            val errorBody = mapOf("error" to "An unexpected error occurred during product deletion.")
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorBody)
+            // This block will catch the hidden error from the database
+            log.error("!!! FAILED TO DELETE PRODUCT $id, ROOT CAUSE: !!!", ex)
+
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf("error" to "Failed to delete product. Check server logs for the full error."))
         }
     }
 
@@ -115,7 +118,6 @@ class ProductsController(
     }
 
 
-    // In your Controller file
 
     @PutMapping("/upquan")
     fun updateQuantityByParam(@RequestParam id: Long, @RequestParam amount: Int): ResponseEntity<String> {
@@ -131,9 +133,28 @@ class ProductsController(
      @GetMapping("/log")
      fun getlog():List<Storagedto>{
 
-             return  log.getall()
+             return  log.getAll()
 
      }
+
+
+
+    @GetMapping("/by-date")
+    fun getProductsByDate(
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate
+    ): ResponseEntity<List<Productdto>> {
+
+        // Call the correct service method
+        val products = log.findqrbyhistory(startDate, endDate)
+
+        // Return the list with a 200 OK status
+        return ResponseEntity.ok(products)
+    }
+
+
+
+
 
 
 
