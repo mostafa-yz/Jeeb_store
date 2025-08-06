@@ -10,25 +10,28 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
-import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.*
 
-// A DTO to safely hold potentially null data from each Excel row.
+
 data class ProductExcelRow(
     val rowIndex: Int,
     val id: Long?,
     val name: String?,
     val category: String?,
     val price: Double?,
-    val quantity: Int?
+    val quantity: Int?,
+    val profit: Double?,
+    val providerid:Long,
+
 )
 
 @Service
 class RechargeService(
     val productsRepository: ProductsRepository,
     val stoServicelog: StoServicelog,
+    val provider : ProviderService,
 ) {
     // Add a professional logger
     private val log = LoggerFactory.getLogger(RechargeService::class.java)
@@ -42,16 +45,20 @@ class RechargeService(
 
         for (rowIndex in 1..sheet.lastRowNum) {
             val row = sheet.getRow(rowIndex) ?: continue
-            excelRows.add(
-                ProductExcelRow(
-                    rowIndex = rowIndex + 1,
-                    id = getCellAsLong(row.getCell(0), dataFormatter),
-                    name = getCellAsString(row.getCell(1), dataFormatter),
-                    category = getCellAsString(row.getCell(2), dataFormatter),
-                    price = getCellAsDouble(row.getCell(3), dataFormatter),
-                    quantity = getCellAsInt(row.getCell(4), dataFormatter)
+            getCellAsLong(row.getCell(6), dataFormatter)?.let {
+                excelRows.add(
+                    ProductExcelRow(
+                        rowIndex = rowIndex + 1,
+                        id = getCellAsLong(row.getCell(0), dataFormatter),
+                        name = getCellAsString(row.getCell(1), dataFormatter),
+                        category = getCellAsString(row.getCell(2), dataFormatter),
+                        price = getCellAsDouble(row.getCell(3), dataFormatter),
+                        quantity = getCellAsInt(row.getCell(4), dataFormatter),
+                        profit = getCellAsDouble(row.getCell(5), dataFormatter),
+                        providerid = it,
+                    )
                 )
-            )
+            }
         }
         workbook.close()
         log.info("Parsed ${excelRows.size} rows from Excel file: ${file.originalFilename}")
@@ -77,6 +84,7 @@ class RechargeService(
                     throw NoSuchElementException("Product with ID ${row.id} from row ${row.rowIndex} not found.")
                 })
             } else {
+                val provider = provider.getbyid(row.providerid)
                 productsToSave.add(Products(
                     name = row.name!!,
                     category = row.category!!,
@@ -84,7 +92,7 @@ class RechargeService(
                     quantity = row.quantity!!,
                     profit = 0.0,
                     position = "Default Position",
-                    provider = null,
+                    provider = provider,
                     qrcode = UUID.randomUUID().toString().replace("-", "").substring(0, 10)
                 ))
             }

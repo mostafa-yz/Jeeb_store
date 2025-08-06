@@ -75,7 +75,7 @@ class ProviderController(private val providerService: ProviderService) {
     @DeleteMapping("/{id}")
     fun deleteProvider(@PathVariable id: Long): ResponseEntity<Unit> {
         providerService.delete(id)
-        return ResponseEntity.noContent().build() // Returns HTTP 204 No Content
+        return ResponseEntity.noContent().build()
     }
 }
 

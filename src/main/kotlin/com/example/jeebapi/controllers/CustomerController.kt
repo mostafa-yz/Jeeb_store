@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.util.Optional
 
 @RestController
 @RequestMapping("/customer")
@@ -39,8 +40,8 @@ class CustomerController(
 
 
     @GetMapping("/{id}")
-    fun getById(@PathVariable id: Long) {
-        customerService.findById(id)
+    fun getById(@PathVariable id: Long): Optional<Customer?> {
+        return customerService.findById(id)
     }
 
 

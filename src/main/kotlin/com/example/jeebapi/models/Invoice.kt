@@ -9,12 +9,14 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import jakarta.persistence.Id
+import org.hibernate.annotations.Where
 import java.time.LocalDateTime
 import java.util.Date
 
 
 @Entity
 @Table(name = "invoice")
+@Where(clause = "is_deleted = false")
  class Invoice(
 
    @Id
@@ -24,6 +26,7 @@ import java.util.Date
    var status: String ="",
    var date: LocalDateTime =LocalDateTime.now(),
    var description: String? ="",
+   var isDeleted: Boolean = false,
 
 
    @OneToMany(mappedBy = "invoice", cascade = [CascadeType.ALL], orphanRemoval = true)

@@ -1,6 +1,6 @@
 package com.example.jeebapi.repository
 
-import com.example.jeebapi.DTO.Productdto
+
 import com.example.jeebapi.models.Products
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository

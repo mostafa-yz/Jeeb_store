@@ -30,6 +30,19 @@ class ProviderService(private val providers: ProviderRepository) {
             .toDto()
     }
 
+
+
+    fun getbyid(providerId: Long): Provider? {
+        return providers.findById(providerId)
+            .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Provider with ID $providerId not found") }
+
+
+    }
+
+
+
+
+
     fun getByPhoneNumber(phoneNumber: String): Providerdto {
         val provider = providers.findByPhonenumber(phoneNumber)
             .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "Provider with phone number $phoneNumber not found") }

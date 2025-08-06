@@ -28,7 +28,9 @@ class CustomerService(private val customerRepository: CustomerRepository) {
     // Find customer by ID
     fun findById(id: Long): Optional<Customer?> {
         return customerRepository.findById(id)
+            ?: throw NoSuchElementException("Customer with id $id not found")
     }
+
 
     // Find customer by phone (optional, included for completeness)
     fun findByPhone(phone: String): Customer? {

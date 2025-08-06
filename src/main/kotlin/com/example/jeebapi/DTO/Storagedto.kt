@@ -20,5 +20,5 @@ data class Storagedto(
 
 
   enum class ActionType {
-    RECHARGE, REMOVE,ADD,decrease
+    RECHARGE, REMOVE,ADD,decrease,invoice
 }

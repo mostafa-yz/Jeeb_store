@@ -162,7 +162,7 @@ class ProductsService(
         val logEntry = Storagedto(
             quantity = createRequest.quantity.toInt(),
             action = ActionType.ADD,
-            reason = "Added '${createRequest.name}' (ID: ${savedProduct.id})",
+            reason = "افزودن  '${createRequest.name}' (ID: ${savedProduct.id})",
             date = LocalDateTime.now().toInstant(ZoneOffset.UTC),
             qr = savedProduct.qrcode,
             productId = savedProduct.id,
@@ -209,9 +209,6 @@ class ProductsService(
         productsRepository.save(product)
 
 
-
-
-
     }
 
     @Transactional
@@ -246,13 +243,11 @@ class ProductsService(
     fun updateAmount(productId: Long?, quantityChange: Int) {
         val product = productsRepository.findByIdOrNull(productId)
             ?: throw ResourceNotFoundException("Product with ID $productId not found")
-
-
         if (quantityChange < 0 && product.quantity < -quantityChange) {
             throw InsufficientStockException("Not enough stock for product '${product.name}'. Available: ${product.quantity}, Requested: ${-quantityChange}")
         }
         product.quantity += quantityChange
-        val updatedProduct =productsRepository.save(product)
+        val updatedProduct = productsRepository.save(product)
 
 
         try {
@@ -268,17 +263,21 @@ class ProductsService(
                 productName = updatedProduct.name,
             )
             stoServicelog.create(listOf(logEntry))
-
-
         } catch (ex: OptimisticLockingFailureException) {
             throw ConcurrencyConflictException("Product stock was updated concurrently. Please try again.", ex)
         }
-
-
-
-
     }
 
+    @Transactional
+    fun updateinvoice(productId: Long?, quantityChange: Int) {
+        val product = productsRepository.findByIdOrNull(productId)
+            ?: throw ResourceNotFoundException("Product with ID $productId not found")
+        if (quantityChange < 0 && product.quantity < -quantityChange) {
+            throw InsufficientStockException("Not enough stock for product '${product.name}'. Available: ${product.quantity}, Requested: ${-quantityChange}")
+        }
+        product.quantity += quantityChange
+         productsRepository.save(product)
+    }
 
     class ResourceNotFoundException(message: String) : RuntimeException(message)
 }

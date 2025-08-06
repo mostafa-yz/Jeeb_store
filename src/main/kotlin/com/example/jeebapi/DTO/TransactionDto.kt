@@ -6,11 +6,13 @@ import com.example.jeebapi.models.Provider
 import com.example.jeebapi.models.User
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import java.time.Instant
 
 data class TransactionDto(
     val id: Int,
     val price: Double = 0.0,
     val quantity: Int = 0,
+    val date: Instant = Instant.now(),
     val Invoice_id: Invoice,
     val product_id: Products,
     val user_id: User,

@@ -4,7 +4,11 @@ import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import java.math.BigDecimal
+import java.time.Instant
 import java.time.LocalDateTime
 
 
@@ -14,14 +18,12 @@ data class Payments(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
-    val paymentDate: LocalDateTime = LocalDateTime.now(),
-    val amount: Int = 0,
-    val note: String? = null,
-    val method: PaymentMethod,
-
+    var date: Instant = Instant.now(),
+    var amount: BigDecimal = BigDecimal.ZERO,
+    var note: String? = null,
+    @ManyToOne
+    @JoinColumn(name = "provider_id")
+    var provider: Provider? = null
 
 )
-enum class PaymentMethod {
-    cashe,card,online
-}
 
