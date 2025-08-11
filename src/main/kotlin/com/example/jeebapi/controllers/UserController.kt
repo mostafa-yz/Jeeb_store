@@ -1,5 +1,6 @@
 package com.example.jeebapi.controllers
 
+import com.example.jeebapi.DTO.Passupdate
 import com.example.jeebapi.DTO.Userdto
 import com.example.jeebapi.models.User
 import com.example.jeebapi.services.UserService
@@ -53,10 +54,22 @@ class UserController(private val userService: UserService) {
      * Updates an existing user. Restricted to admins by the UserService.
      */
     @PutMapping("/{id}")
-    fun updateUser(@PathVariable id: Long, @RequestBody user: User): ResponseEntity<User> {
+    fun updateUser(@PathVariable id: Long, @RequestBody user: User) {
         val updatedUser = userService.update(id, user)
+
+    }
+
+    @PutMapping("/password/{id}")
+    fun updatePassword(@PathVariable id: Long, @RequestBody passwordUpdateDto: Passupdate): ResponseEntity<User> {
+        val updatedUser = userService.updatePassword(id, passwordUpdateDto)
         return ResponseEntity.ok(updatedUser)
     }
+
+
+
+
+
+
 
     /**
      * DELETE /api/users/{id}

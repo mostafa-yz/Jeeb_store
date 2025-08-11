@@ -2,6 +2,7 @@ package com.example.jeebapi.services
 
 
 import com.example.jeebapi.DTO.ReprotDTO
+import com.example.jeebapi.DTO.SalesDashboard
 import com.example.jeebapi.repository.TransactionRepository
 import com.ibm.icu.text.ArabicShaping
 import com.ibm.icu.text.ArabicShapingException
@@ -15,6 +16,7 @@ import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -392,7 +394,20 @@ class ReportService(
 
 
 
+    @Transactional(readOnly = true)
+    fun getSalesDashboardData(): SalesDashboard {
+        val mostSoldItems = transaction.findMostSoldItemsForCurrentMonth()
+        val topProviders = transaction.findTopProvidersByIncomeForCurrentMonth()
+        val totalInvoices = transaction.countTotalInvoicesForCurrentMonth()
+        val dailyInvoices = transaction.findDailyInvoicesForCurrentMonth()
 
+        return SalesDashboard(
+            mostSoldItems = mostSoldItems,
+            topProviders = topProviders,
+            totalInvoices = totalInvoices,
+            dailyInvoices = dailyInvoices
+        )
+    }
 
 
 

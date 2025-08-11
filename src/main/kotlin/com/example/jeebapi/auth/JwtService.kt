@@ -39,7 +39,7 @@ class JwtService(@Autowired val jwtProperties: JwtProperties) {
     fun isTokenValid(token: String, userDetails: UserDetails): Boolean {
         val extractedUsername = extractUsername(token)
         val expired = isTokenExpired(token)
-        println("🔍 Token check: extracted = $extractedUsername, expected = ${userDetails.username}, expired = $expired")
+     
         return extractedUsername == userDetails.username && !expired
     }
 

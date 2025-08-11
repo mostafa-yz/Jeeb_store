@@ -9,7 +9,7 @@ data class Storagedto(
     val quantity: Int,
     val action: ActionType,
     val reason: String? = "",
-    val date: Instant?,
+    var date: LocalDateTime? = null,
     val qr: String? = null,
     val productId: Long? = null,
     val providerId: Long? = null,

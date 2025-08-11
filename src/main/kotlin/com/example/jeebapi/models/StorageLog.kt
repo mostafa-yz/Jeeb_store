@@ -28,7 +28,7 @@ data class StorageLog(
 
     var reason: String? = null,
 
-    var date: Instant = Instant.now(),
+    var date: LocalDateTime?=null,
 
     @Column(name = "product_id", nullable = true)
     var productId: Long? = null,

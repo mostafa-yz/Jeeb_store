@@ -123,6 +123,55 @@ interface TransactionRepository : JpaRepository<Transactions, Long> {
 
 
 
+    @Query("SELECT t.product.id, t.product.name, SUM(t.quantity) FROM Transactions t " +
+            "WHERE FUNCTION('YEAR', t.date) = FUNCTION('YEAR', CURRENT_DATE) AND FUNCTION('MONTH', t.date) = FUNCTION('MONTH', CURRENT_DATE) " +
+            "GROUP BY t.product.id, t.product.name ORDER BY SUM(t.quantity) DESC")
+    fun findMostSoldItemsForCurrentMonth(): List<Array<Any>>
+
+    /**
+     * Finds the top providers by total income for the current month, including the provider name.
+     * Returns a list of arrays: [provider_id, provider_name, total_income]
+     */
+    @Query("SELECT t.provider.id, t.provider.name, SUM(t.price * t.quantity) FROM Transactions t " +
+            "WHERE FUNCTION('YEAR', t.date) = FUNCTION('YEAR', CURRENT_DATE) AND FUNCTION('MONTH', t.date) = FUNCTION('MONTH', CURRENT_DATE) " +
+            "GROUP BY t.provider.id, t.provider.name ORDER BY SUM(t.price * t.quantity) DESC")
+    fun findTopProvidersByIncomeForCurrentMonth(): List<Array<Any>>
+
+    /**
+     * Counts the total number of unique invoices for the current month.
+     * Returns a single Integer value.
+     */
+    @Query("SELECT COUNT(DISTINCT t.invoice) FROM Transactions t " +
+            "WHERE FUNCTION('YEAR', t.date) = FUNCTION('YEAR', CURRENT_DATE) AND FUNCTION('MONTH', t.date) = FUNCTION('MONTH', CURRENT_DATE)")
+    fun countTotalInvoicesForCurrentMonth(): Int
+
+    /**
+     * Finds the number of unique invoices per day for the current month.
+     * This is useful for chart visualization.
+     * Returns a list of arrays: [sales_date, total_invoices_per_day]
+     */
+    @Query("SELECT FUNCTION('DATE', t.date), COUNT(DISTINCT t.invoice) FROM Transactions t " +
+            "WHERE FUNCTION('YEAR', t.date) = FUNCTION('YEAR', CURRENT_DATE) AND FUNCTION('MONTH', t.date) = FUNCTION('MONTH', CURRENT_DATE) " +
+            "GROUP BY FUNCTION('DATE', t.date) ORDER BY FUNCTION('DATE', t.date)")
+    fun findDailyInvoicesForCurrentMonth(): List<Array<Any>>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

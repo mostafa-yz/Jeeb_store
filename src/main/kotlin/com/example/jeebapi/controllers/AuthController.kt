@@ -5,9 +5,11 @@ import com.example.jeebapi.auth.JwtService
 import com.example.jeebapi.repository.UserRepository
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseCookie
 import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.web.bind.annotation.GetMapping
@@ -31,14 +33,26 @@ class AuthController(
     @PostMapping("/login")
     fun login(
         @RequestBody request: AuthRequest,
-        response: HttpServletResponse // Inject HttpServletResponse to set headers
-    ): ResponseEntity<Userdto> { // Return only the user data in the body
-        authenticationManager.authenticate(
-            UsernamePasswordAuthenticationToken(request.username, request.password)
-        )
+        response: HttpServletResponse
+    ): ResponseEntity<Userdto> {
+        try {
+            authenticationManager.authenticate(
+                UsernamePasswordAuthenticationToken(request.username, request.password)
+            )
+        } catch (e: BadCredentialsException) {
+            // Return 401 Unauthorized with a specific error message for bad credentials
+            return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(null) // Or a custom error DTO if you have one
+        } catch (e: Exception) {
+            // Handle other exceptions like a disabled account, etc.
+            return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(null)
+        }
 
         val user = userRepository.findByEmail(request.username)
-            ?: throw Exception("User not found with email: ${request.username}")
+            ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null)
 
         val userDto = Userdto(
             id = user.id,
@@ -50,25 +64,21 @@ class AuthController(
         val userDetails = userDetailsService.loadUserByUsername(request.username)
         val token = jwtService.generateToken(userDetails.username)
 
-        // Create a secure, HttpOnly cookie 🍪
         val cookie: ResponseCookie = ResponseCookie.from("accessToken", token)
-            .httpOnly(true)       // 🔒 Prevents access from JavaScript
-            .secure(true)         // Only send over HTTPS (set to false for local HTTP dev)
-            .path("/")            // Available to the entire site
-//            .maxAge(Duration.ofHours(1)) // Set cookie expiration (e.g., 1 hour)
-            .sameSite("Lax")      // CSRF protection
+            .httpOnly(true)
+            .secure(true)
+            .path("/")
+            .sameSite("Lax")
             .build()
 
-        // Add the cookie to the response headers
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())
 
-        // Return the user DTO in the body, token is now in the cookie
         return ResponseEntity.ok(userDto)
     }
 
     @GetMapping("/me")
     fun getCurrentUser(principal: Principal): ResponseEntity<Userdto> {
-        // The Principal is correctly populated from the JWT cookie by Spring Security
+
         val user = userRepository.findByEmail(principal.name)
             ?: throw Exception("User not found from token")
 
@@ -79,13 +89,28 @@ class AuthController(
             accesslevel = user.accesslevel
         )
 
-        // ✅ Return the user data directly
+
         return ResponseEntity.ok(userDto)
     }
 
 
 
+    @PostMapping("/logout")
+    fun logout(response: HttpServletResponse): ResponseEntity<Void> {
+        // Create a cookie that expires immediately, instructing the browser to delete it
+        val cookie: ResponseCookie = ResponseCookie.from("accessToken", "")
+            .httpOnly(true)
+            .secure(true) // Should match the setting of your login cookie
+            .path("/")
+            .maxAge(0) // 🍪 This is the key: it deletes the cookie
+            .sameSite("Lax")
+            .build()
 
+        // Add the deletion cookie to the response headers
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())
+
+        return ResponseEntity.ok().build()
+    }
 
 
 

@@ -43,15 +43,16 @@ class InvoiceService(
             Invoice(
                 buyer = request.buyer,
                 status = request.status,
-                date = request.date ?: LocalDateTime.now(),
+                date = request.date ,
                 description = request.description,
                 user = user,
                 customer = customer,
             )
         )
-        val productIds = request.items.map { it.id }
+        val productIds = request.items.map{it.id}
         val products = productRepository.findAllById(productIds)
         val productsById = products.associateBy { it.id }
+
 
         // Ensure all requested products were found
         if (productsById.size != productIds.size) {
@@ -59,6 +60,10 @@ class InvoiceService(
             val notFoundIds = productIds.filterNot { foundIds.contains(it) }
             throw EntityNotFoundException("Products not found with IDs: $notFoundIds")
         }
+
+
+
+
 
         val invoiceItems = mutableListOf<InvoProducts>()
         val transactions = mutableListOf<Transactions>()
@@ -84,7 +89,7 @@ class InvoiceService(
                 Transactions(
                     price = itemDto.price,
                     quantity = itemDto.quantity.toInt(),
-                    date = Instant.now(),
+                    date = request.date,
                     invoice = newInvoice,
                     product = product,
                     user = user,
@@ -216,11 +221,14 @@ class InvoiceService(
                         provider = product.provider,
                     )
                 )
+
+
+
                 transactions.add(
                     Transactions(
                         price = itemDto.price,
                         quantity = itemDto.quantity.toInt(),
-                        date = Instant.now(),
+                        date =  request.date,
                         invoice = savedInvoice,
                         product = product,
                         user = user,

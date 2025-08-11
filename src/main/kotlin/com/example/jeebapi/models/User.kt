@@ -15,12 +15,12 @@ data class User(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
-    val name: String = "",
+    var name: String = "",
 
-    val email: String = "",
+    var email: String = "",
 
-    val password: String = "",
-    val accesslevel: Int = 0,
+    var password: String = "",
+    var accesslevel: Int = 0,
 
 
     @OneToMany(mappedBy = "user")

@@ -8,6 +8,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import java.time.Instant
+import java.time.LocalDateTime
 
 
 @Entity
@@ -18,14 +19,10 @@ class Transactions(
     val id: Long? = 0,
     var price: Double = 0.0,
     var quantity: Int?=0,
-    var date: Instant = Instant.now(),
+    var date: LocalDateTime?=null,
     @ManyToOne
     @JoinColumn(name = "Invoice_id", nullable = false)
     val invoice: Invoice? = null,
-
-
-
-
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
     val product: Products? = null,

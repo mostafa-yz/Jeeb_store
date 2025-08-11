@@ -38,15 +38,35 @@ class paymentService(
         return savedPayment.toResponseDto()
     }
 
-//    fun getPaymentById(id: Long): Pay? {
-//        println("Attempting to retrieve payment with ID: $id") // For debugging
-//        // Find the entity, then map it to a DTO if it exists.
-//        return paymentsRepository.findById(id).map { it.toResponseDto() }.orElse(null)
-//    }
 
-//    fun getPaymentsByProviderId(providerId: Long): List<Pay> {
-//        return paymentsRepository.findByProviderId(providerId).map { it.toResponseDto() }
-//    }
+
+
+
+    fun getPaymentsByProviderId(providerId: Long): List<Pay> {
+        val payments = paymentsRepository.findByProvider_Id(providerId)
+        return payments.map { it.toResponseDto() } // Convert each Payments object to a DTO
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

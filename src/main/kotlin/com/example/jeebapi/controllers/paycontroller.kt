@@ -1,5 +1,6 @@
 package com.example.jeebapi.controllers
 import com.example.jeebapi.DTO.Pay
+import com.example.jeebapi.models.Payments
 import com.example.jeebapi.services.paymentService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -31,11 +32,10 @@ class paycontroller(
 
 
     @GetMapping("/{id}")
-    fun getPaymentById(@PathVariable id: Long): ResponseEntity<Pay> {
-        val payment = paymentService.getPaymentById(id)
-        return payment?.let {
-            ResponseEntity(it, HttpStatus.OK)
-        } ?: ResponseEntity(HttpStatus.NOT_FOUND)
+    fun getPaymentById(@PathVariable id: Long): List<Pay> {
+        val payment = paymentService.getPaymentsByProviderId(id)
+
+        return  payment
     }
 
 

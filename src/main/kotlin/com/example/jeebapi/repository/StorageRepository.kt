@@ -37,8 +37,8 @@ interface StorageRepository: JpaRepository<StorageLog, Long> {
 """)
     fun findLogsByActionsAndDateRange(
         actions: List<ActionType>,
-        start: Instant,
-        end: Instant
+        start: LocalDateTime,
+        end: LocalDateTime
     ): List<Productdto>
 
 }

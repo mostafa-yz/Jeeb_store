@@ -1,5 +1,6 @@
 package com.example.jeebapi.services
 
+import com.example.jeebapi.DTO.Passupdate
 import com.example.jeebapi.DTO.Userdto
 import com.example.jeebapi.auth.CustomUserDetails
 import com.example.jeebapi.models.User
@@ -49,20 +50,50 @@ class UserService(
      * @throws IllegalAccessException if the current user is not an admin.
      * @throws EntityNotFoundException if the user does not exist.
      */
+
     fun update(id: Long, userDetails: User): User {
         ensureCurrentUserIsAdmin()
-
         val existingUser = userRepository.findById(id)
             .orElseThrow { EntityNotFoundException("User with ID $id not found.") }
 
-        val updatedUser = existingUser.copy(
-            name = userDetails.name,
-            email = userDetails.email,
-            accesslevel = userDetails.accesslevel
-            // Password is intentionally not updated here
-        )
-        return userRepository.save(updatedUser)
+        // 2. Conditionally update the properties of the EXISTING object.
+        // This prevents fields from being accidentally overwritten with null or blank values.
+        if (userDetails.name.isNotBlank()) {
+            existingUser.name = userDetails.name
+        }
+
+        if (userDetails.email.isNotBlank()) {
+            existingUser.email = userDetails.email
+        }
+
+        // CORRECTION: Check if the access level has changed from the existing value
+        if (userDetails.accesslevel != existingUser.accesslevel) {
+            existingUser.accesslevel = userDetails.accesslevel
+        }
+
+        // 3. Save the modified EXISTING object.
+        // JPA will detect the changes and perform an UPDATE query on the database.
+        return userRepository.save(existingUser)
     }
+
+
+
+    fun updatePassword(id: Long, passwordUpdateDto: Passupdate): User {
+        ensureCurrentUserIsAdmin()
+        // Find the user to update or throw an exception if not found
+        val existingUser = userRepository.findById(id)
+            .orElseThrow { EntityNotFoundException("User with ID $id not found.") }
+
+        // Securely hash the new password
+        val hashedPassword = passwordEncoder.encode(passwordUpdateDto.password)
+
+        // Update only the password property on the existing entity
+        existingUser.password = hashedPassword
+
+        // Save the modified entity. JPA will handle the UPDATE query.
+        return userRepository.save(existingUser)
+    }
+
 
     /**
      * Deletes a user by their ID. Only an admin can perform this action,
@@ -100,7 +131,7 @@ class UserService(
                 email = user.email,
                 accesslevel = user.accesslevel,
 
-            )
+                )
         }
     }
 
@@ -129,7 +160,6 @@ class UserService(
         val hasAdminAccess = if (principal is CustomUserDetails) {
             principal.accesslevel >= User.LEVEL_ADMIN
         } else {
-            // This case might occur for unauthenticated users or if security is misconfigured
             false
         }
 

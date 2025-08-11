@@ -10,6 +10,7 @@ import com.example.jeebapi.repository.StorageRepository
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneOffset
 
@@ -42,6 +43,7 @@ class StoServicelog(
                 quantity = dto.quantity,
                 action = dto.action,
                 reason = dto.reason,
+                date = LocalDateTime.now(),
                 productId = product.id,
                 productName = product.name,
                 providerId = provider?.id,
@@ -72,19 +74,17 @@ class StoServicelog(
         }
     }
 
-    // In your Service class
 
     fun findqrbyhistory(start: LocalDate, end: LocalDate): List<Productdto> {
-        // Convert the start date to the beginning of that day in UTC
-        val startInstant = start.atStartOfDay().toInstant(ZoneOffset.UTC)
+        // Convert the start date to the beginning of the day using LocalDateTime
+        val startDateTime = start.atStartOfDay()
 
-        // Convert the end date to the beginning of the *next* day in UTC
-        // This creates a correct range (e.g., from 24th 00:00 to 25th 00:00)
-        val endInstant = end.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC)
+        // Convert the end date to the end of the day to include all hours
+        val endDateTime = end.atTime(23, 59, 59, 999999999)
 
         val actionsToFind = listOf(ActionType.RECHARGE, ActionType.ADD)
 
-        // Call the repository with the correct Instant values
-        return storageRepository.findLogsByActionsAndDateRange(actionsToFind, startInstant, endInstant)
+        // Call the repository with LocalDateTime values
+        return storageRepository.findLogsByActionsAndDateRange(actionsToFind, startDateTime, endDateTime)
     }
 }

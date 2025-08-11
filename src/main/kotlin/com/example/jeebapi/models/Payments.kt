@@ -18,7 +18,7 @@ data class Payments(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
-    var date: Instant = Instant.now(),
+    var date: LocalDateTime? = null,
     var amount: BigDecimal = BigDecimal.ZERO,
     var note: String? = null,
     @ManyToOne

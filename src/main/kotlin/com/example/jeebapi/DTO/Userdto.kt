@@ -6,7 +6,4 @@ data class Userdto(
     val email:String? = null,
     val accesslevel: Int = 0,
 
-
-
-
 )

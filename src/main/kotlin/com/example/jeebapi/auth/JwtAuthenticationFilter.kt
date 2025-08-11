@@ -36,7 +36,7 @@ class JwtAuthenticationFilter(
                     )
                     authToken.details = WebAuthenticationDetailsSource().buildDetails(request)
                     SecurityContextHolder.getContext().authentication = authToken
-                    println("✅ Authenticated user from cookie: $username")
+
                 }
             }
         }

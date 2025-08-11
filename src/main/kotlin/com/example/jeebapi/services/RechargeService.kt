@@ -118,7 +118,7 @@ class RechargeService(
                 action = if (isUpdate) ActionType.RECHARGE else ActionType.ADD,
                 reason = if (isUpdate) "Recharged '${savedProduct.name}' (ID: ${savedProduct.id}) from Excel"
                 else "Added new product '${savedProduct.name}' (ID: ${savedProduct.id}) from Excel",
-                date = LocalDateTime.now().toInstant(ZoneOffset.UTC),
+                date = LocalDateTime.now(),
                 qr = savedProduct.qrcode,
                 productId = savedProduct.id,
                 productName = savedProduct.name.toString(),

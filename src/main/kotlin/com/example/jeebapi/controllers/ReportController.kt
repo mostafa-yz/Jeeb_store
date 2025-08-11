@@ -1,5 +1,6 @@
 package com.example.jeebapi.controllers
 
+import com.example.jeebapi.DTO.SalesDashboard
 import com.example.jeebapi.services.ReportService
 import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
@@ -93,7 +94,10 @@ class ReportController(
     }
 
 
-
+    @GetMapping("/dashboard")
+    fun getSalesDashboardData(): SalesDashboard {
+        return reportService.getSalesDashboardData()
+    }
 
 
 

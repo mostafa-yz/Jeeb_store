@@ -24,7 +24,7 @@ import java.util.Date
     val id: Long = 0,
    var buyer: String ="",
    var status: String ="",
-   var date: LocalDateTime =LocalDateTime.now(),
+   var date: LocalDateTime ?=LocalDateTime.now(),
    var description: String? ="",
    var isDeleted: Boolean = false,
 
