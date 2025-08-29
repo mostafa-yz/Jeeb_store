@@ -21,7 +21,9 @@ import kotlin.collections.map
             description = invoice.description,
             items = invoice.items.map { toItemDto(it) },
             userId = invoice.user?.id,
-            customerId = invoice.customer?.id
+            customerId = invoice.customer?.id,
+            phonenumber = invoice.phoneNumber,
+            paymentmethod = invoice.paymentmethod,
         )
     }
 

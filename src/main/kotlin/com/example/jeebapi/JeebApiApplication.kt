@@ -1,19 +1,25 @@
 package com.example.jeebapi
 
-import org.springframework.boot.ApplicationRunner
+import com.ibm.icu.util.TimeZone
+import jakarta.annotation.PostConstruct
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import javax.sql.DataSource
+import java.util.Date
 
 @SpringBootApplication
-class JeebApiApplication
+class JeebApiApplication {
 
+
+	@PostConstruct
+	fun init() {
+		TimeZone.setDefault(TimeZone.getTimeZone("Asia/Tehran"))
+
+
+	}
+
+}
 fun main(args: Array<String>) {
 	runApplication<JeebApiApplication>(*args)
-
-
 
 
 }

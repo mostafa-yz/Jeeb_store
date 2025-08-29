@@ -152,7 +152,7 @@ class ProductsService(
             price = createRequest.price,
             quantity = createRequest.quantity.toInt(),
             profit = createRequest.profit,
-            qrcode = UUID.randomUUID().toString().replace("-", "").substring(0, 10),
+            qrcode = UUID.randomUUID().toString().replace("-", "").substring(0, 7),
             position = createRequest.position,
             provider = providerEntity
         )
@@ -244,7 +244,7 @@ class ProductsService(
         val product = productsRepository.findByIdOrNull(productId)
             ?: throw ResourceNotFoundException("Product with ID $productId not found")
         if (quantityChange < 0 && product.quantity < -quantityChange) {
-            throw InsufficientStockException("Not enough stock for product '${product.name}'. Available: ${product.quantity}, Requested: ${-quantityChange}")
+            throw InsufficientStockException("تعداد کافی از محصول موجود نیست '${product.name}'. Available: ${product.quantity}, Requested: ${-quantityChange}")
         }
         product.quantity += quantityChange
         val updatedProduct = productsRepository.save(product)

@@ -6,6 +6,7 @@ import com.example.jeebapi.models.Provider
 import com.example.jeebapi.repository.PaymentRepository
 import com.example.jeebapi.repository.ProviderRepository
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
 class paymentService(
@@ -28,8 +29,8 @@ class paymentService(
         }
 
         val paymentToSave = Payments(
-            date = request.date,
-            amount = request.amount, // Convert Double back to Int for the entity
+            date =LocalDateTime.now(),
+            amount = request.amount,
             note = request.note,
             provider = provider
         )

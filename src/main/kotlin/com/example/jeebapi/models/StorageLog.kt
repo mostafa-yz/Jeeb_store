@@ -38,8 +38,8 @@ data class StorageLog(
 
     // Snapshot values
     @Column(name = "product_name")
-    var productName: String = "", // <-- FIXED: Added default value
+    var productName: String = "",
 
-    @Column(name = "provider_name", nullable = true) // provider name can be null
-    var providerName: String? = null // <-- FIXED: Added default value & made nullable
+    @Column(name = "provider_name", nullable = true)
+    var providerName: String? = null
 )

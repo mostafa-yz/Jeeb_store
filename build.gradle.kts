@@ -1,5 +1,6 @@
 plugins {
-    kotlin("jvm") version "1.9.25"
+//    kotlin("jvm") version "1.9.25"
+    kotlin("jvm") version "2.0.10"
     kotlin("plugin.spring") version "1.9.25"
     id("org.springframework.boot") version "3.4.5"
     id("io.spring.dependency-management") version "1.1.7"
@@ -10,7 +11,7 @@ version = "0.0.1-SNAPSHOT"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
@@ -35,6 +36,7 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
     implementation("com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10")
     implementation("com.ibm.icu:icu4j:74.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.6.0")
 
 
 

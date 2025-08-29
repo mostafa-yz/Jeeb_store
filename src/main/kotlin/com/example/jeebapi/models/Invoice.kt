@@ -23,10 +23,12 @@ import java.util.Date
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
    var buyer: String ="",
+   var phoneNumber: String ?=null,
    var status: String ="",
-   var date: LocalDateTime ?=LocalDateTime.now(),
+   var date: LocalDateTime ?=null,
    var description: String? ="",
    var isDeleted: Boolean = false,
+   var paymentmethod: String ?=null,
 
 
    @OneToMany(mappedBy = "invoice", cascade = [CascadeType.ALL], orphanRemoval = true)

@@ -215,11 +215,7 @@ class ReportService(
                             <span>${formatCurrencyWithSlashes(firstReportItem.totalTransactionValue)}</span>
                         </span>
                         <span class="summary-item">
-                            <strong>${reorderText("سهم ما:")}</strong>
-                            <span>${formatCurrencyWithSlashes(firstReportItem.totalOurEarnings)}</span>
-                        </span>
-                        <span class="summary-item">
-                            <strong>${reorderText("مجموع پرداختی به تامین کننده:")}</strong>
+                            <strong>${reorderText("مجموع پرداختی :")}</strong>
                             <span>${formatCurrencyWithSlashes(firstReportItem.totalPaidToProvider)}</span>
                         </span>
                     </div>

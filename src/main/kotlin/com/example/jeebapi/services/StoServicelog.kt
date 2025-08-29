@@ -11,8 +11,9 @@ import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalTime
+import java.time.ZoneId
 import java.time.ZoneOffset
+
 
 @Service
 class StoServicelog(
@@ -33,10 +34,10 @@ class StoServicelog(
             val product = dto.productId?.let { productsMap[it] }
             if (product == null) {
                 println("Warning: Product with ID ${dto.productId} not found. Skipping.")
-                return@mapNotNull null // Product is mandatory, so this is correct.
+                return@mapNotNull null
             }
 
-            // Look up the provider, but don't fail if it's null.
+
             val provider = dto.providerId?.let { providersMap[it] }
 
             StorageLog(
@@ -49,6 +50,9 @@ class StoServicelog(
                 providerId = provider?.id,
                 providerName = provider?.name
             )
+
+
+
         }
 
         if (logsToSave.isNotEmpty()) {
@@ -56,6 +60,24 @@ class StoServicelog(
             storageRepository.saveAll(logsToSave)
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     fun getAll(): List<Storagedto> {
         return storageRepository.findAll().map { log ->
@@ -75,16 +97,23 @@ class StoServicelog(
     }
 
 
+
+
+
+
     fun findqrbyhistory(start: LocalDate, end: LocalDate): List<Productdto> {
-        // Convert the start date to the beginning of the day using LocalDateTime
         val startDateTime = start.atStartOfDay()
 
-        // Convert the end date to the end of the day to include all hours
         val endDateTime = end.atTime(23, 59, 59, 999999999)
-
         val actionsToFind = listOf(ActionType.RECHARGE, ActionType.ADD)
-
-        // Call the repository with LocalDateTime values
+        println("the date$startDateTime - $endDateTime")
         return storageRepository.findLogsByActionsAndDateRange(actionsToFind, startDateTime, endDateTime)
     }
+
+
+
+
+
+
+
 }

@@ -14,5 +14,7 @@ import java.time.LocalDateTime
         val description: String?,
         val items: List<ItemDto>,
         val userId: Long?,
-        val customerId: Long?
+        val customerId: Long?,
+        val phonenumber: String?,
+        val paymentmethod: String?,
     )
