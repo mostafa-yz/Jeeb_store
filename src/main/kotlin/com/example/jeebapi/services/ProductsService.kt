@@ -32,7 +32,7 @@ class ProductsService(
     private val logger = LoggerFactory.getLogger(ProductsService::class.java)
 
 
-    fun getAllProducts(): List<Productdto> { // Using ProductResponse for consistency
+    fun getAllProducts(): List<Productdto> { 
         logger.info("ProductsService.getAllProducts() called.")
         val productsEntities = productsRepository.findAll()
         logger.info("Found {} products entities from repository.", productsEntities.size)
@@ -79,7 +79,6 @@ class ProductsService(
             qrcode = productEntity.qrcode,
             position = productEntity.position,
             providerId = productEntity.provider?.id
-            // Ensure no 'provider' field is mapped if ProductResponse doesn't have it
         )
 
         logger.info("Returning ProductResponse DTO for QR code '{}'.", barcode)
@@ -157,7 +156,7 @@ class ProductsService(
             provider = providerEntity
         )
         val savedProduct = productsRepository.save(newProductEntity)
-        productsRepository.flush() // Ensure Product is persisted
+        productsRepository.flush() 
 
         val logEntry = Storagedto(
             quantity = createRequest.quantity.toInt(),
