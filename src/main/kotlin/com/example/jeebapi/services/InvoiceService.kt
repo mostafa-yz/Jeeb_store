@@ -308,7 +308,7 @@ class InvoiceService(
                 reason = "حذف آیتم از فاکتور و بازگردانی موجودی '${item.name}' )",
                 date = LocalDateTime.now(),
                 qr = product.qrcode,
-                productId = item.productId,   // FIXED: use productId, not item.id
+                productId = item.productId,   /
                 providerId = item.providerId,
                 providerName = product.provider?.name,
                 productName = item.name,
